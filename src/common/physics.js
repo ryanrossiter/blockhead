@@ -2,6 +2,8 @@ import Matter from 'matter-js';
 
 export default {
     engine: null,
+    isClient: false,
+
     onCollision: function(pair, bodyA, bodyB) {
         if (bodyA.hasOwnProperty('entityId') || bodyB.hasOwnProperty('entityId')) {
             var entityA = bodyA.entityId? this.entities[bodyA.entityId] : null;
@@ -21,6 +23,8 @@ export default {
 
         this.engine = Matter.Engine.create();
         this.engine.world.gravity.y = 0;
+
+        this.isClient = core.isClient;
 
         this.onCollision = this.onCollision.bind(core);
         Matter.Events.on(this.engine, "collisionStart", (event) => {

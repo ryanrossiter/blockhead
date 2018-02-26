@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 3);
+/******/ 	return __webpack_require__(__webpack_require__.s = 8);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -125,6 +125,12 @@ exports.default = {
 
 /***/ }),
 /* 1 */
+/***/ (function(module, exports) {
+
+module.exports = require("matter-js");
+
+/***/ }),
+/* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -201,7 +207,7 @@ exports.default = {
 };
 
 /***/ }),
-/* 2 */
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -215,11 +221,11 @@ var _get = function get(object, property, receiver) { if (object === null) objec
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _helpers = __webpack_require__(1);
+var _helpers = __webpack_require__(2);
 
 var _helpers2 = _interopRequireDefault(_helpers);
 
-var _PhysicsEntity2 = __webpack_require__(8);
+var _PhysicsEntity2 = __webpack_require__(5);
 
 var _PhysicsEntity3 = _interopRequireDefault(_PhysicsEntity2);
 
@@ -314,7 +320,7 @@ exports.default = Mob;
 ;
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -324,11 +330,652 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _socket = __webpack_require__(4);
+var _matterJs = __webpack_require__(1);
+
+var _matterJs2 = _interopRequireDefault(_matterJs);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+exports.default = {
+    engine: null,
+    isClient: false,
+
+    onCollision: function onCollision(pair, bodyA, bodyB) {
+        if (bodyA.hasOwnProperty('entityId') || bodyB.hasOwnProperty('entityId')) {
+            var entityA = bodyA.entityId ? this.entities[bodyA.entityId] : null;
+            var entityB = bodyB.entityId ? this.entities[bodyB.entityId] : null;
+
+            if (entityA) {
+                entityA.onCollision(entityB, pair, pair.bodyA);
+            }
+
+            if (entityB) {
+                entityB.onCollision(entityA, pair, pair.bodyB);
+            }
+        }
+    },
+
+    CreateEngine: function CreateEngine(core) {
+        var _this = this;
+
+        this.engine = _matterJs2.default.Engine.create();
+        this.engine.world.gravity.y = 0;
+
+        this.isClient = core.isClient;
+
+        this.onCollision = this.onCollision.bind(core);
+        _matterJs2.default.Events.on(this.engine, "collisionStart", function (event) {
+            for (var i = 0; i < event.pairs.length; i++) {
+                var bodyA = event.pairs[i].bodyA;
+                var bodyB = event.pairs[i].bodyB;
+                // Find parent body, will contain the entityId
+                while (bodyA.parent != bodyA) {
+                    bodyA = bodyA.parent;
+                }while (bodyB.parent != bodyB) {
+                    bodyB = bodyB.parent;
+                }_this.onCollision(event.pairs[i], bodyA, bodyB);
+            }
+        });
+    }
+};
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _set = function set(object, property, value, receiver) { var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent !== null) { set(parent, property, value, receiver); } } else if ("value" in desc && desc.writable) { desc.value = value; } else { var setter = desc.set; if (setter !== undefined) { setter.call(receiver, value); } } return value; };
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _helpers = __webpack_require__(2);
+
+var _helpers2 = _interopRequireDefault(_helpers);
+
+var _Entity2 = __webpack_require__(6);
+
+var _Entity3 = _interopRequireDefault(_Entity2);
+
+var _common = __webpack_require__(0);
+
+var _common2 = _interopRequireDefault(_common);
+
+var _matterJs = __webpack_require__(1);
+
+var _matterJs2 = _interopRequireDefault(_matterJs);
+
+var _physics = __webpack_require__(4);
+
+var _physics2 = _interopRequireDefault(_physics);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var ENTITIES = _common2.default.ENTITIES;
+
+
+var _data = Symbol('data');
+var SCHEMA = {
+    _protect: ['type'],
+    type: ENTITIES.PHYSICS_ENTITY,
+    xVelocity: 0,
+    yVelocity: 0,
+    angularVelocity: 0,
+    angle: 0,
+    lastUpdate: 0
+};
+
+var PhysicsEntity = function (_Entity) {
+    _inherits(PhysicsEntity, _Entity);
+
+    _createClass(PhysicsEntity, [{
+        key: 'type',
+        get: function get() {
+            return this[_data].type;
+        }
+    }, {
+        key: 'angle',
+        get: function get() {
+            return this[_data].angle;
+        }
+    }]);
+
+    function PhysicsEntity(data) {
+        _classCallCheck(this, PhysicsEntity);
+
+        var _this = _possibleConstructorReturn(this, (PhysicsEntity.__proto__ || Object.getPrototypeOf(PhysicsEntity)).call(this, data));
+
+        _this[_data] = _helpers2.default.mask(SCHEMA, Object.assign({}, {
+            lastUpdate: Date.now()
+        }, data));
+
+        _this.setBody(_this.createBody());
+        return _this;
+    }
+
+    _createClass(PhysicsEntity, [{
+        key: 'createBody',
+        value: function createBody() {
+            var body = new _matterJs2.default.Bodies.circle(this.x, this.y, this.w / 2);
+            body.friction = 0.0;
+            body.frictionAir = 0.2;
+            return body;
+        }
+    }, {
+        key: 'update',
+        value: function update(core) {
+            var needsUpdate = _get(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'update', this).call(this, core);
+
+            if (_get(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'x', this) != this.body.position.x) {
+                needsUpdate |= true;
+                _set(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'x', this.body.position.x, this);
+            }
+
+            if (_get(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'y', this) != this.body.position.y) {
+                needsUpdate |= true;
+                _set(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'y', this.body.position.y, this);
+            }
+
+            if (this[_data].xVelocity != this.body.velocity.x) {
+                needsUpdate |= true;
+                this[_data].xVelocity = this.body.velocity.x;
+            }
+
+            if (this[_data].yVelocity != this.body.velocity.y) {
+                needsUpdate |= true;
+                this[_data].yVelocity = this.body.velocity.y;
+            }
+
+            if (this[_data].angle != this.body.angle) {
+                needsUpdate |= true;
+                this[_data].angle = this.body.angle;
+            }
+
+            if (this[_data].angularVelocity != this.body.angularVelocity) {
+                needsUpdate |= true;
+                this[_data].angularVelocity = this.body.angularVelocity;
+            }
+
+            if (needsUpdate == true) {
+                this[_data].lastUpdate = Date.now();
+            }
+
+            return needsUpdate;
+        }
+    }, {
+        key: 'onCollision',
+        value: function onCollision(entity, pair, body) {}
+    }, {
+        key: 'toData',
+        value: function toData() {
+            return Object.assign({}, _get(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'toData', this).call(this), _helpers2.default.mask(SCHEMA, this[_data], true));
+        }
+    }, {
+        key: 'dataUpdate',
+        value: function dataUpdate(data, now) {
+            _get(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'dataUpdate', this).call(this, data);
+            this[_data] = _helpers2.default.mask(this[_data], data);
+
+            var delay = 0;
+            var xVelCorr = 0;
+            var yVelCorr = 0;
+            var angleVelCorr = 0;
+            if (this.lastBodyUpdate !== null) {
+                delay = now - this[_data].lastUpdate;
+                var delta = Date.now() + delay - this.lastBodyUpdate;
+
+                xVelCorr = (_get(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'x', this) - this.body.position.x) / (delta / (1000 / 60));
+                yVelCorr = (_get(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'y', this) - this.body.position.y) / (delta / (1000 / 60));
+                angleVelCorr = (this[_data].angle - this.body.angle) / (delta / (1000 / 60));
+            }
+
+            this.lastBodyUpdate = Date.now() + delay;
+            //console.log(`${this.body.velocity.x} ${this[_data].xVelocity} ${this.body.position.x} ${super.x} ${xVelCorr}`);
+            //console.log("aa", xVelCorr);
+            _matterJs2.default.Body.setVelocity(this.body, { x: this[_data].xVelocity + xVelCorr, y: this[_data].yVelocity + yVelCorr });
+            _matterJs2.default.Body.setAngularVelocity(this.body, this[_data].angularVelocity + angleVelCorr);
+            //Matter.Body.setPosition(this.body, { x: super.x, y: super.y });
+            //Matter.Body.setAngle(this.body, this[_data].angle);
+        }
+    }, {
+        key: 'setBody',
+        value: function setBody(body) {
+            _matterJs2.default.Body.set(body, {
+                position: { x: this.x, y: this.y },
+                angle: this[_data].angle
+            });
+            _matterJs2.default.Body.setVelocity(body, { x: this[_data].xVelocity, y: this[_data].yVelocity });
+            _matterJs2.default.Body.setAngularVelocity(body, this[_data].angularVelocity);
+
+            this.body = body;
+            this.body.entityId = this.id;
+            this.lastBodyUpdate = Date.now();
+            _matterJs2.default.World.add(_physics2.default.engine.world, this.body);
+        }
+    }, {
+        key: 'onDelete',
+        value: function onDelete() {
+            _matterJs2.default.Composite.remove(_physics2.default.engine.world, this.body);
+        }
+    }]);
+
+    return PhysicsEntity;
+}(_Entity3.default);
+
+exports.default = PhysicsEntity;
+;
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _helpers = __webpack_require__(2);
+
+var _helpers2 = _interopRequireDefault(_helpers);
+
+var _common = __webpack_require__(0);
+
+var _common2 = _interopRequireDefault(_common);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var ENTITIES = _common2.default.ENTITIES;
+
+
+var _data = Symbol('data');
+var SCHEMA = {
+    _protect: ['type'],
+    type: ENTITIES.ENTITY,
+    id: undefined,
+    player: null,
+    x: 0,
+    y: 0,
+    w: 3,
+    h: 3
+};
+
+var Entity = function () {
+    function Entity(data) {
+        _classCallCheck(this, Entity);
+
+        this[_data] = _helpers2.default.mask(SCHEMA, data);
+        // protect the id once it's set, not really necessary but a neat feature
+        this[_data]._protect.push('id');
+
+        this.hashCode = _helpers2.default.hashCode(this.id);
+        this.needsUpdate = true; // Start with updating the clients
+        this.serverSideOnly = false;
+        this.deleted = false;
+
+        if (this[_data].w === -1 || this[_data].h === -1) {
+            this[_data].w = this[_data].h = this[_data].r * 2;
+        }
+    }
+
+    _createClass(Entity, [{
+        key: 'distanceFrom',
+        value: function distanceFrom(x, y) {
+            return Math.sqrt(Math.pow(this.x - x, 2) + Math.pow(this.y - y, 2));
+        }
+    }, {
+        key: 'setPos',
+        value: function setPos(newX, newY) {
+            this[_data].x = newX;
+            this[_data].y = newY;
+        }
+    }, {
+        key: 'move',
+        value: function move(dx, dy) {
+            setPos.call(this, this[_data].x + dx, this[_data].y + dy);
+        }
+    }, {
+        key: 'update',
+        value: function update(core) {
+            return this.needsUpdate;
+        }
+    }, {
+        key: 'clientUpdate',
+        // returns true if we need to send an update to the client.
+
+        value: function clientUpdate() {}
+    }, {
+        key: 'toData',
+
+
+        // full used in cases where changes are usually sent in segments but the full data needs to be sent (first update)
+        value: function toData(full) {
+            return _helpers2.default.mask(SCHEMA, this[_data], true);
+        }
+    }, {
+        key: 'dataUpdate',
+        value: function dataUpdate(data, now) {
+            this[_data] = _helpers2.default.mask(this[_data], data);
+        }
+    }, {
+        key: 'onDelete',
+        value: function onDelete() {}
+    }, {
+        key: 'id',
+        get: function get() {
+            return this[_data].id;
+        }
+    }, {
+        key: 'type',
+        get: function get() {
+            return this[_data].type;
+        }
+    }, {
+        key: 'player',
+        get: function get() {
+            return this[_data].player;
+        },
+        set: function set(p) {
+            this.needsUpdate = true;this[_data].player = p;
+        }
+    }, {
+        key: 'x',
+        get: function get() {
+            return this[_data].x;
+        },
+        set: function set(x) {
+            this.needsUpdate = true;this[_data].x = x;
+        }
+    }, {
+        key: 'y',
+        get: function get() {
+            return this[_data].y;
+        },
+        set: function set(y) {
+            this.needsUpdate = true;this[_data].y = y;
+        }
+    }, {
+        key: 'w',
+        get: function get() {
+            return this[_data].w;
+        },
+        set: function set(w) {
+            this.needsUpdate = true;this[_data].w = w;
+        }
+    }, {
+        key: 'h',
+        get: function get() {
+            return this[_data].h;
+        },
+        set: function set(h) {
+            this.needsUpdate = true;this[_data].h = h;
+        }
+    }]);
+
+    return Entity;
+}();
+
+exports.default = Entity;
+;
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _helpers = __webpack_require__(2);
+
+var _helpers2 = _interopRequireDefault(_helpers);
+
+var _Mob2 = __webpack_require__(3);
+
+var _Mob3 = _interopRequireDefault(_Mob2);
+
+var _Projectile = __webpack_require__(13);
+
+var _Projectile2 = _interopRequireDefault(_Projectile);
+
+var _common = __webpack_require__(0);
+
+var _common2 = _interopRequireDefault(_common);
+
+var _matterJs = __webpack_require__(1);
+
+var _matterJs2 = _interopRequireDefault(_matterJs);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var ENTITIES = _common2.default.ENTITIES;
+
+
+var _data = Symbol('data');
+var SCHEMA = {
+    _protect: ['type'],
+    type: ENTITIES.PLAYER,
+    forward: false,
+    backward: false,
+    left: false,
+    right: false,
+    shoot: false
+};
+
+var ACCELERATION = 0.1;
+var SHOOT_DELAY = 100;
+var PROJECTILE_SPEED = 2.5;
+
+var Player = function (_Mob) {
+    _inherits(Player, _Mob);
+
+    _createClass(Player, [{
+        key: 'type',
+        get: function get() {
+            return this[_data].type;
+        }
+    }, {
+        key: 'shoot',
+        get: function get() {
+            return this[_data].shoot;
+        },
+        set: function set(s) {
+            if (this[_data].shoot !== s) {
+                this.needsUpdate = true;this[_data].shoot = s;
+            }
+        }
+    }, {
+        key: 'forward',
+        get: function get() {
+            return this[_data].forward;
+        },
+        set: function set(f) {
+            if (this[_data].forward !== f) {
+                this.needsUpdate = true;this[_data].forward = f;this._forward();
+            }
+        }
+    }, {
+        key: 'backward',
+        get: function get() {
+            return this[_data].backward;
+        },
+        set: function set(b) {
+            if (this[_data].backward !== b) {
+                this.needsUpdate = true;this[_data].backward = b;this._backward();
+            }
+        }
+    }, {
+        key: 'left',
+        get: function get() {
+            return this[_data].left;
+        },
+        set: function set(l) {
+            if (this[_data].left !== l) {
+                this.needsUpdate = true;this[_data].left = l;this._left();
+            }
+        }
+    }, {
+        key: 'right',
+        get: function get() {
+            return this[_data].right;
+        },
+        set: function set(r) {
+            if (this[_data].right !== r) {
+                this.needsUpdate = true;this[_data].right = r;this._right();
+            }
+        }
+    }]);
+
+    function Player(data) {
+        _classCallCheck(this, Player);
+
+        var _this = _possibleConstructorReturn(this, (Player.__proto__ || Object.getPrototypeOf(Player)).call(this, data));
+
+        _this[_data] = _helpers2.default.mask(SCHEMA, data);
+
+        _this.shootTimer = 0;
+        return _this;
+    }
+
+    _createClass(Player, [{
+        key: 'update',
+        value: function update(core) {
+            var needsUpdate = _get(Player.prototype.__proto__ || Object.getPrototypeOf(Player.prototype), 'update', this).call(this, core);
+
+            if (this.shootTimer > 0) this.shootTimer -= core.getUpdateDelta();
+
+            if (this[_data].shoot === true && this.shootTimer <= 0) {
+                this._shoot(core);
+                this.shootTimer = SHOOT_DELAY;
+            }
+
+            if (this[_data].forward === true) {
+                this._forward();
+            }
+
+            if (this[_data].backward === true) {
+                this._backward();
+            }
+
+            if (this[_data].left === true) {
+                this._left();
+            }
+
+            if (this[_data].right === true) {
+                this._right();
+            }
+
+            return needsUpdate;
+        }
+    }, {
+        key: '_shoot',
+        value: function _shoot(core) {
+            core.entity.create(_Projectile2.default, {
+                player: this.player,
+                x: this.x,
+                y: this.y,
+                xVelocity: Math.cos(this.angleFacing) * PROJECTILE_SPEED,
+                yVelocity: Math.sin(this.angleFacing) * PROJECTILE_SPEED
+            });
+        }
+    }, {
+        key: '_left',
+        value: function _left() {
+            _matterJs2.default.Body.setVelocity(this.body, {
+                x: this.body.velocity.x - ACCELERATION,
+                y: this.body.velocity.y
+            });
+        }
+    }, {
+        key: '_right',
+        value: function _right() {
+            _matterJs2.default.Body.setVelocity(this.body, {
+                x: this.body.velocity.x + ACCELERATION,
+                y: this.body.velocity.y
+            });
+        }
+    }, {
+        key: '_forward',
+        value: function _forward() {
+            _matterJs2.default.Body.setVelocity(this.body, {
+                x: this.body.velocity.x,
+                y: this.body.velocity.y + ACCELERATION
+            });
+        }
+    }, {
+        key: '_backward',
+        value: function _backward() {
+            _matterJs2.default.Body.setVelocity(this.body, {
+                x: this.body.velocity.x,
+                y: this.body.velocity.y - ACCELERATION
+            });
+        }
+    }, {
+        key: 'toData',
+        value: function toData() {
+            return Object.assign({}, _get(Player.prototype.__proto__ || Object.getPrototypeOf(Player.prototype), 'toData', this).call(this), _helpers2.default.mask(SCHEMA, this[_data], true));
+        }
+    }, {
+        key: 'dataUpdate',
+        value: function dataUpdate(data, now) {
+            _get(Player.prototype.__proto__ || Object.getPrototypeOf(Player.prototype), 'dataUpdate', this).call(this, data, now);
+            this[_data] = _helpers2.default.mask(this[_data], data);
+        }
+    }]);
+
+    return Player;
+}(_Mob3.default);
+
+exports.default = Player;
+;
+
+/***/ }),
+/* 8 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _socket = __webpack_require__(9);
 
 var _socket2 = _interopRequireDefault(_socket);
 
-var _physics = __webpack_require__(9);
+var _physics = __webpack_require__(4);
 
 var _physics2 = _interopRequireDefault(_physics);
 
@@ -336,25 +983,25 @@ var _Test = __webpack_require__(10);
 
 var _Test2 = _interopRequireDefault(_Test);
 
-var _WorldBuilder = __webpack_require__(13);
+var _WorldBuilder = __webpack_require__(12);
 
 var _WorldBuilder2 = _interopRequireDefault(_WorldBuilder);
 
-var _Mob = __webpack_require__(2);
+var _Mob = __webpack_require__(3);
 
 var _Mob2 = _interopRequireDefault(_Mob);
 
-var _Player = __webpack_require__(6);
+var _Player = __webpack_require__(7);
 
 var _Player2 = _interopRequireDefault(_Player);
 
-var _Zombie = __webpack_require__(15);
+var _ZombieSpawner = __webpack_require__(14);
 
-var _Zombie2 = _interopRequireDefault(_Zombie);
+var _ZombieSpawner2 = _interopRequireDefault(_ZombieSpawner);
 
 var _common = __webpack_require__(0);
 
-var _matterJs = __webpack_require__(7);
+var _matterJs = __webpack_require__(1);
 
 var _matterJs2 = _interopRequireDefault(_matterJs);
 
@@ -395,24 +1042,24 @@ const Core = {
 
         _WorldBuilder2.default.Build(_physics2.default.engine.world, _Test2.default);
 
-        Core.entity.create(_Zombie2.default, {
-            x: 15,
-            y: 15
+        Core.entity.create(_ZombieSpawner2.default, {
+            x: 30,
+            y: 30
         });
 
-        Core.entity.create(_Zombie2.default, {
-            x: -15,
-            y: 15
+        Core.entity.create(_ZombieSpawner2.default, {
+            x: -30,
+            y: 30
         });
 
-        Core.entity.create(_Zombie2.default, {
-            x: 15,
-            y: -15
+        Core.entity.create(_ZombieSpawner2.default, {
+            x: 30,
+            y: -30
         });
 
-        Core.entity.create(_Zombie2.default, {
-            x: -15,
-            y: -15
+        Core.entity.create(_ZombieSpawner2.default, {
+            x: -30,
+            y: -30
         });
 
         setInterval(this.update.bind(this), this.updateInterval);
@@ -429,12 +1076,14 @@ const Core = {
     },
 
     update: function () {
+        _matterJs2.default.Engine.update(_physics2.default.engine, this.getUpdateDelta());
+
         var updatedEntities = [];
         var deletedEntities = [];
         for (var id in this.entities) {
             if (this.entities.hasOwnProperty(id)) {
                 var e = this.entities[id];
-                if (e.update(this)) {
+                if (e.update(this) && e.serverSideOnly === false) {
                     // update returns true if the client should recieve an update
                     e.needsUpdate = false;
                     updatedEntities.push(e.toData());
@@ -454,7 +1103,6 @@ const Core = {
             this.entity.deleteAll(deletedEntities);
         }
 
-        _matterJs2.default.Engine.update(_physics2.default.engine, this.getUpdateDelta());
         this.lastUpdate = Date.now();
     },
 
@@ -743,7 +1391,7 @@ const Core = {
             updateAll: function (full) {
                 var es = [];
                 for (var id in Core.entities) {
-                    if (Core.entities.hasOwnProperty(id)) {
+                    if (Core.entities.hasOwnProperty(id) && Core.entities[id].serverSideOnly === false) {
                         es.push(Core.entities[id].toData(full)); // maybe only recreate data if it has changed?
                     }
                 }
@@ -758,647 +1406,10 @@ Core.init();
 exports.default = Core;
 
 /***/ }),
-/* 4 */
+/* 9 */
 /***/ (function(module, exports) {
 
 module.exports = require("socket.io");
-
-/***/ }),
-/* 5 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _helpers = __webpack_require__(1);
-
-var _helpers2 = _interopRequireDefault(_helpers);
-
-var _common = __webpack_require__(0);
-
-var _common2 = _interopRequireDefault(_common);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var ENTITIES = _common2.default.ENTITIES;
-
-
-var _data = Symbol('data');
-var SCHEMA = {
-    _protect: ['type'],
-    type: ENTITIES.ENTITY,
-    id: undefined,
-    player: null,
-    x: 0,
-    y: 0,
-    w: 3,
-    h: 3
-};
-
-var Entity = function () {
-    function Entity(data) {
-        _classCallCheck(this, Entity);
-
-        this[_data] = _helpers2.default.mask(SCHEMA, data);
-        // protect the id once it's set, not really necessary but a neat feature
-        this[_data]._protect.push('id');
-
-        this.hashCode = _helpers2.default.hashCode(this.id);
-        this.needsUpdate = true; // Start with updating the clients
-        this.deleted = false;
-
-        if (this[_data].w === -1 || this[_data].h === -1) {
-            this[_data].w = this[_data].h = this[_data].r * 2;
-        }
-    }
-
-    _createClass(Entity, [{
-        key: 'setPos',
-        value: function setPos(newX, newY) {
-            this[_data].x = newX;
-            this[_data].y = newY;
-        }
-    }, {
-        key: 'move',
-        value: function move(dx, dy) {
-            setPos.call(this, this[_data].x + dx, this[_data].y + dy);
-        }
-    }, {
-        key: 'update',
-        value: function update(core) {
-            return this.needsUpdate;
-        }
-    }, {
-        key: 'clientUpdate',
-        // returns true if we need to send an update to the client.
-
-        value: function clientUpdate() {}
-    }, {
-        key: 'toData',
-
-
-        // full used in cases where changes are usually sent in segments but the full data needs to be sent (first update)
-        value: function toData(full) {
-            return _helpers2.default.mask(SCHEMA, this[_data], true);
-        }
-    }, {
-        key: 'dataUpdate',
-        value: function dataUpdate(data, now) {
-            this[_data] = _helpers2.default.mask(this[_data], data);
-        }
-    }, {
-        key: 'onDelete',
-        value: function onDelete() {}
-    }, {
-        key: 'id',
-        get: function get() {
-            return this[_data].id;
-        }
-    }, {
-        key: 'type',
-        get: function get() {
-            return this[_data].type;
-        }
-    }, {
-        key: 'player',
-        get: function get() {
-            return this[_data].player;
-        },
-        set: function set(p) {
-            this.needsUpdate = true;this[_data].player = p;
-        }
-    }, {
-        key: 'x',
-        get: function get() {
-            return this[_data].x;
-        },
-        set: function set(x) {
-            this.needsUpdate = true;this[_data].x = x;
-        }
-    }, {
-        key: 'y',
-        get: function get() {
-            return this[_data].y;
-        },
-        set: function set(y) {
-            this.needsUpdate = true;this[_data].y = y;
-        }
-    }, {
-        key: 'w',
-        get: function get() {
-            return this[_data].w;
-        },
-        set: function set(w) {
-            this.needsUpdate = true;this[_data].w = w;
-        }
-    }, {
-        key: 'h',
-        get: function get() {
-            return this[_data].h;
-        },
-        set: function set(h) {
-            this.needsUpdate = true;this[_data].h = h;
-        }
-    }]);
-
-    return Entity;
-}();
-
-exports.default = Entity;
-;
-
-/***/ }),
-/* 6 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _helpers = __webpack_require__(1);
-
-var _helpers2 = _interopRequireDefault(_helpers);
-
-var _Mob2 = __webpack_require__(2);
-
-var _Mob3 = _interopRequireDefault(_Mob2);
-
-var _Projectile = __webpack_require__(14);
-
-var _Projectile2 = _interopRequireDefault(_Projectile);
-
-var _common = __webpack_require__(0);
-
-var _common2 = _interopRequireDefault(_common);
-
-var _matterJs = __webpack_require__(7);
-
-var _matterJs2 = _interopRequireDefault(_matterJs);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var ENTITIES = _common2.default.ENTITIES;
-
-
-var _data = Symbol('data');
-var SCHEMA = {
-    _protect: ['type'],
-    type: ENTITIES.PLAYER,
-    forward: false,
-    backward: false,
-    left: false,
-    right: false,
-    shoot: false
-};
-
-var ACCELERATION = 0.1;
-var SHOOT_DELAY = 200;
-var PROJECTILE_SPEED = 2;
-
-var Player = function (_Mob) {
-    _inherits(Player, _Mob);
-
-    _createClass(Player, [{
-        key: 'type',
-        get: function get() {
-            return this[_data].type;
-        }
-    }, {
-        key: 'shoot',
-        get: function get() {
-            return this[_data].shoot;
-        },
-        set: function set(s) {
-            if (this[_data].shoot !== s) {
-                this.needsUpdate = true;this[_data].shoot = s;
-            }
-        }
-    }, {
-        key: 'forward',
-        get: function get() {
-            return this[_data].forward;
-        },
-        set: function set(f) {
-            if (this[_data].forward !== f) {
-                this.needsUpdate = true;this[_data].forward = f;this._forward();
-            }
-        }
-    }, {
-        key: 'backward',
-        get: function get() {
-            return this[_data].backward;
-        },
-        set: function set(b) {
-            if (this[_data].backward !== b) {
-                this.needsUpdate = true;this[_data].backward = b;this._backward();
-            }
-        }
-    }, {
-        key: 'left',
-        get: function get() {
-            return this[_data].left;
-        },
-        set: function set(l) {
-            if (this[_data].left !== l) {
-                this.needsUpdate = true;this[_data].left = l;this._left();
-            }
-        }
-    }, {
-        key: 'right',
-        get: function get() {
-            return this[_data].right;
-        },
-        set: function set(r) {
-            if (this[_data].right !== r) {
-                this.needsUpdate = true;this[_data].right = r;this._right();
-            }
-        }
-    }]);
-
-    function Player(data) {
-        _classCallCheck(this, Player);
-
-        var _this = _possibleConstructorReturn(this, (Player.__proto__ || Object.getPrototypeOf(Player)).call(this, data));
-
-        _this[_data] = _helpers2.default.mask(SCHEMA, data);
-
-        _this.shootTimer = 0;
-        return _this;
-    }
-
-    _createClass(Player, [{
-        key: 'update',
-        value: function update(core) {
-            var needsUpdate = _get(Player.prototype.__proto__ || Object.getPrototypeOf(Player.prototype), 'update', this).call(this, core);
-
-            if (this.shootTimer > 0) this.shootTimer -= core.getUpdateDelta();
-
-            if (this[_data].shoot === true && this.shootTimer <= 0) {
-                this._shoot(core);
-                this.shootTimer = SHOOT_DELAY;
-            }
-
-            if (this[_data].forward === true) {
-                this._forward();
-            }
-
-            if (this[_data].backward === true) {
-                this._backward();
-            }
-
-            if (this[_data].left === true) {
-                this._left();
-            }
-
-            if (this[_data].right === true) {
-                this._right();
-            }
-
-            return needsUpdate;
-        }
-    }, {
-        key: '_shoot',
-        value: function _shoot(core) {
-            core.entity.create(_Projectile2.default, {
-                player: this.player,
-                x: this.x,
-                y: this.y,
-                xVelocity: Math.cos(this.angleFacing) * PROJECTILE_SPEED,
-                yVelocity: Math.sin(this.angleFacing) * PROJECTILE_SPEED
-            });
-        }
-    }, {
-        key: '_left',
-        value: function _left() {
-            _matterJs2.default.Body.setVelocity(this.body, {
-                x: this.body.velocity.x - ACCELERATION,
-                y: this.body.velocity.y
-            });
-        }
-    }, {
-        key: '_right',
-        value: function _right() {
-            _matterJs2.default.Body.setVelocity(this.body, {
-                x: this.body.velocity.x + ACCELERATION,
-                y: this.body.velocity.y
-            });
-        }
-    }, {
-        key: '_forward',
-        value: function _forward() {
-            _matterJs2.default.Body.setVelocity(this.body, {
-                x: this.body.velocity.x,
-                y: this.body.velocity.y + ACCELERATION
-            });
-        }
-    }, {
-        key: '_backward',
-        value: function _backward() {
-            _matterJs2.default.Body.setVelocity(this.body, {
-                x: this.body.velocity.x,
-                y: this.body.velocity.y - ACCELERATION
-            });
-        }
-    }, {
-        key: 'toData',
-        value: function toData() {
-            return Object.assign({}, _get(Player.prototype.__proto__ || Object.getPrototypeOf(Player.prototype), 'toData', this).call(this), _helpers2.default.mask(SCHEMA, this[_data], true));
-        }
-    }, {
-        key: 'dataUpdate',
-        value: function dataUpdate(data, now) {
-            _get(Player.prototype.__proto__ || Object.getPrototypeOf(Player.prototype), 'dataUpdate', this).call(this, data, now);
-            this[_data] = _helpers2.default.mask(this[_data], data);
-        }
-    }]);
-
-    return Player;
-}(_Mob3.default);
-
-exports.default = Player;
-;
-
-/***/ }),
-/* 7 */
-/***/ (function(module, exports) {
-
-module.exports = require("matter-js");
-
-/***/ }),
-/* 8 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-
-var _set = function set(object, property, value, receiver) { var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent !== null) { set(parent, property, value, receiver); } } else if ("value" in desc && desc.writable) { desc.value = value; } else { var setter = desc.set; if (setter !== undefined) { setter.call(receiver, value); } } return value; };
-
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _helpers = __webpack_require__(1);
-
-var _helpers2 = _interopRequireDefault(_helpers);
-
-var _Entity2 = __webpack_require__(5);
-
-var _Entity3 = _interopRequireDefault(_Entity2);
-
-var _common = __webpack_require__(0);
-
-var _common2 = _interopRequireDefault(_common);
-
-var _matterJs = __webpack_require__(7);
-
-var _matterJs2 = _interopRequireDefault(_matterJs);
-
-var _physics = __webpack_require__(9);
-
-var _physics2 = _interopRequireDefault(_physics);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var ENTITIES = _common2.default.ENTITIES;
-
-
-var _data = Symbol('data');
-var SCHEMA = {
-    _protect: ['type'],
-    type: ENTITIES.PHYSICS_ENTITY,
-    xVelocity: 0,
-    yVelocity: 0,
-    angularVelocity: 0,
-    angle: 0,
-    lastUpdate: 0
-};
-
-var PhysicsEntity = function (_Entity) {
-    _inherits(PhysicsEntity, _Entity);
-
-    _createClass(PhysicsEntity, [{
-        key: 'type',
-        get: function get() {
-            return this[_data].type;
-        }
-    }, {
-        key: 'angle',
-        get: function get() {
-            return this[_data].angle;
-        }
-    }]);
-
-    function PhysicsEntity(data) {
-        _classCallCheck(this, PhysicsEntity);
-
-        var _this = _possibleConstructorReturn(this, (PhysicsEntity.__proto__ || Object.getPrototypeOf(PhysicsEntity)).call(this, data));
-
-        _this[_data] = _helpers2.default.mask(SCHEMA, Object.assign({}, {
-            lastUpdate: Date.now()
-        }, data));
-
-        _this.setBody(_this.createBody());
-        return _this;
-    }
-
-    _createClass(PhysicsEntity, [{
-        key: 'createBody',
-        value: function createBody() {
-            var body = new _matterJs2.default.Bodies.circle(this.x, this.y, this.w / 2);
-            body.friction = 0.0;
-            body.frictionAir = 0.2;
-            return body;
-        }
-    }, {
-        key: 'update',
-        value: function update(core) {
-            var needsUpdate = _get(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'update', this).call(this, core);
-
-            if (_get(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'x', this) != this.body.position.x) {
-                needsUpdate |= true;
-                _set(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'x', this.body.position.x, this);
-            }
-
-            if (_get(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'y', this) != this.body.position.y) {
-                needsUpdate |= true;
-                _set(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'y', this.body.position.y, this);
-            }
-
-            if (this[_data].xVelocity != this.body.velocity.x) {
-                needsUpdate |= true;
-                this[_data].xVelocity = this.body.velocity.x;
-            }
-
-            if (this[_data].yVelocity != this.body.velocity.y) {
-                needsUpdate |= true;
-                this[_data].yVelocity = this.body.velocity.y;
-            }
-
-            if (this[_data].angle != this.body.angle) {
-                needsUpdate |= true;
-                this[_data].angle = this.body.angle;
-            }
-
-            if (this[_data].angularVelocity != this.body.angularVelocity) {
-                needsUpdate |= true;
-                this[_data].angularVelocity = this.body.angularVelocity;
-            }
-
-            if (needsUpdate == true) {
-                this[_data].lastUpdate = Date.now();
-            }
-
-            return needsUpdate;
-        }
-    }, {
-        key: 'onCollision',
-        value: function onCollision(entity, pair, body) {}
-    }, {
-        key: 'toData',
-        value: function toData() {
-            return Object.assign({}, _get(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'toData', this).call(this), _helpers2.default.mask(SCHEMA, this[_data], true));
-        }
-    }, {
-        key: 'dataUpdate',
-        value: function dataUpdate(data, now) {
-            _get(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'dataUpdate', this).call(this, data);
-            this[_data] = _helpers2.default.mask(this[_data], data);
-
-            var delay = 0;
-            var xVelCorr = 0;
-            var yVelCorr = 0;
-            var angleVelCorr = 0;
-            if (this.lastBodyUpdate !== null) {
-                delay = now - this[_data].lastUpdate;
-                var delta = Date.now() + delay - this.lastBodyUpdate;
-
-                xVelCorr = (_get(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'x', this) - this.body.position.x) / (delta / (1000 / 60));
-                yVelCorr = (_get(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'y', this) - this.body.position.y) / (delta / (1000 / 60));
-                angleVelCorr = (this[_data].angle - this.body.angle) / (delta / (1000 / 60));
-            }
-
-            this.lastBodyUpdate = Date.now() + delay;
-            //console.log(`${this.body.velocity.x} ${this[_data].xVelocity} ${this.body.position.x} ${super.x} ${xVelCorr}`);
-            //console.log("aa", xVelCorr);
-            _matterJs2.default.Body.setVelocity(this.body, { x: this[_data].xVelocity + xVelCorr, y: this[_data].yVelocity + yVelCorr });
-            _matterJs2.default.Body.setAngularVelocity(this.body, this[_data].angularVelocity + angleVelCorr);
-            //Matter.Body.setPosition(this.body, { x: super.x, y: super.y });
-            //Matter.Body.setAngle(this.body, this[_data].angle);
-        }
-    }, {
-        key: 'setBody',
-        value: function setBody(body) {
-            _matterJs2.default.Body.set(body, {
-                position: { x: this.x, y: this.y },
-                angle: this[_data].angle
-            });
-            _matterJs2.default.Body.setVelocity(body, { x: this[_data].xVelocity, y: this[_data].yVelocity });
-            _matterJs2.default.Body.setAngularVelocity(body, this[_data].angularVelocity);
-
-            this.body = body;
-            this.body.entityId = this.id;
-            this.lastBodyUpdate = Date.now();
-            _matterJs2.default.World.add(_physics2.default.engine.world, this.body);
-        }
-    }, {
-        key: 'onDelete',
-        value: function onDelete() {
-            _matterJs2.default.Composite.remove(_physics2.default.engine.world, this.body);
-        }
-    }]);
-
-    return PhysicsEntity;
-}(_Entity3.default);
-
-exports.default = PhysicsEntity;
-;
-
-/***/ }),
-/* 9 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-
-var _matterJs = __webpack_require__(7);
-
-var _matterJs2 = _interopRequireDefault(_matterJs);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-exports.default = {
-    engine: null,
-    onCollision: function onCollision(pair, bodyA, bodyB) {
-        if (bodyA.hasOwnProperty('entityId') || bodyB.hasOwnProperty('entityId')) {
-            var entityA = bodyA.entityId ? this.entities[bodyA.entityId] : null;
-            var entityB = bodyB.entityId ? this.entities[bodyB.entityId] : null;
-
-            if (entityA) {
-                entityA.onCollision(entityB, pair, pair.bodyA);
-            }
-
-            if (entityB) {
-                entityB.onCollision(entityA, pair, pair.bodyB);
-            }
-        }
-    },
-
-    CreateEngine: function CreateEngine(core) {
-        var _this = this;
-
-        this.engine = _matterJs2.default.Engine.create();
-        this.engine.world.gravity.y = 0;
-
-        this.onCollision = this.onCollision.bind(core);
-        _matterJs2.default.Events.on(this.engine, "collisionStart", function (event) {
-            for (var i = 0; i < event.pairs.length; i++) {
-                var bodyA = event.pairs[i].bodyA;
-                var bodyB = event.pairs[i].bodyB;
-                // Find parent body, will contain the entityId
-                while (bodyA.parent != bodyA) {
-                    bodyA = bodyA.parent;
-                }while (bodyB.parent != bodyB) {
-                    bodyB = bodyB.parent;
-                }_this.onCollision(event.pairs[i], bodyA, bodyB);
-            }
-        });
-    }
-};
 
 /***/ }),
 /* 10 */
@@ -1454,8 +1465,7 @@ exports.default = {
 };
 
 /***/ }),
-/* 12 */,
-/* 13 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1465,7 +1475,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _matterJs = __webpack_require__(7);
+var _matterJs = __webpack_require__(1);
 
 var _matterJs2 = _interopRequireDefault(_matterJs);
 
@@ -1495,7 +1505,7 @@ exports.default = {
 };
 
 /***/ }),
-/* 14 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1509,15 +1519,15 @@ var _get = function get(object, property, receiver) { if (object === null) objec
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _helpers = __webpack_require__(1);
+var _helpers = __webpack_require__(2);
 
 var _helpers2 = _interopRequireDefault(_helpers);
 
-var _PhysicsEntity2 = __webpack_require__(8);
+var _PhysicsEntity2 = __webpack_require__(5);
 
 var _PhysicsEntity3 = _interopRequireDefault(_PhysicsEntity2);
 
-var _Mob = __webpack_require__(2);
+var _Mob = __webpack_require__(3);
 
 var _Mob2 = _interopRequireDefault(_Mob);
 
@@ -1525,9 +1535,13 @@ var _common = __webpack_require__(0);
 
 var _common2 = _interopRequireDefault(_common);
 
-var _matterJs = __webpack_require__(7);
+var _matterJs = __webpack_require__(1);
 
 var _matterJs2 = _interopRequireDefault(_matterJs);
+
+var _physics = __webpack_require__(4);
+
+var _physics2 = _interopRequireDefault(_physics);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -1546,7 +1560,7 @@ var SCHEMA = {
     type: ENTITIES.PROJECTILE
 };
 
-var DEFAULT_LIFETIME = 1000;
+var DEFAULT_LIFETIME = 2500;
 
 var Projectile = function (_PhysicsEntity) {
     _inherits(Projectile, _PhysicsEntity);
@@ -1568,8 +1582,9 @@ var Projectile = function (_PhysicsEntity) {
 
         _this[_data] = _helpers2.default.mask(SCHEMA, data);
 
-        _this.body.frictionAir = 0.01;
-        _this.body.restitution = 0.9;
+        _this.body.frictionAir = 0;
+        _this.body.restitution = 0;
+        _this.body.mass = 0.3;
 
         _this.lifetime = DEFAULT_LIFETIME;
         return _this;
@@ -1581,8 +1596,10 @@ var Projectile = function (_PhysicsEntity) {
             if (entity && entity.player === this.player) {
                 _matterJs2.default.Pair.setActive(pair, false);
             } else {
-                if (entity && entity instanceof _Mob2.default) {
-                    entity.health = entity.health - 1;
+                if (_physics2.default.isClient === false) {
+                    if (entity && entity instanceof _Mob2.default) {
+                        entity.health = entity.health - 1;
+                    }
                 }
                 this.deleted = true;
             }
@@ -1619,6 +1636,92 @@ exports.default = Projectile;
 ;
 
 /***/ }),
+/* 14 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+var _helpers = __webpack_require__(2);
+
+var _helpers2 = _interopRequireDefault(_helpers);
+
+var _Entity2 = __webpack_require__(6);
+
+var _Entity3 = _interopRequireDefault(_Entity2);
+
+var _Zombie = __webpack_require__(15);
+
+var _Zombie2 = _interopRequireDefault(_Zombie);
+
+var _common = __webpack_require__(0);
+
+var _common2 = _interopRequireDefault(_common);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var ENTITIES = _common2.default.ENTITIES;
+
+
+var SPAWN_DELAY = 5000;
+
+var ZombieSpawner = function (_Entity) {
+    _inherits(ZombieSpawner, _Entity);
+
+    function ZombieSpawner(data) {
+        _classCallCheck(this, ZombieSpawner);
+
+        var _this = _possibleConstructorReturn(this, (ZombieSpawner.__proto__ || Object.getPrototypeOf(ZombieSpawner)).call(this, data));
+
+        _this.serverSideOnly = true;
+        _this.spawnTimer = 0;
+        return _this;
+    }
+
+    _createClass(ZombieSpawner, [{
+        key: 'update',
+        value: function update(core) {
+            var needsUpdate = _get(ZombieSpawner.prototype.__proto__ || Object.getPrototypeOf(ZombieSpawner.prototype), 'update', this).call(this, core);
+
+            if (this.spawnTimeElapsed > SPAWN_DELAY) {
+                core.entity.create(_Zombie2.default, {
+                    x: this.x,
+                    y: this.y
+                });
+
+                this.spawnTimer = Date.now();
+            }
+
+            return needsUpdate;
+        }
+    }, {
+        key: 'spawnTimeElapsed',
+        get: function get() {
+            return Date.now() - this.spawnTimer;
+        }
+    }]);
+
+    return ZombieSpawner;
+}(_Entity3.default);
+
+exports.default = ZombieSpawner;
+;
+
+/***/ }),
 /* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -1633,19 +1736,23 @@ var _get = function get(object, property, receiver) { if (object === null) objec
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _helpers = __webpack_require__(1);
+var _helpers = __webpack_require__(2);
 
 var _helpers2 = _interopRequireDefault(_helpers);
 
-var _Mob2 = __webpack_require__(2);
+var _Mob2 = __webpack_require__(3);
 
 var _Mob3 = _interopRequireDefault(_Mob2);
+
+var _Player = __webpack_require__(7);
+
+var _Player2 = _interopRequireDefault(_Player);
 
 var _common = __webpack_require__(0);
 
 var _common2 = _interopRequireDefault(_common);
 
-var _matterJs = __webpack_require__(7);
+var _matterJs = __webpack_require__(1);
 
 var _matterJs2 = _interopRequireDefault(_matterJs);
 
@@ -1707,7 +1814,9 @@ var Zombie = function (_Mob) {
             if (this.targetEntity) {
                 var dX = this.targetEntity.x - this.x;
                 var dY = this.targetEntity.y - this.y;
-                this.angleFacing = Math.atan(dY / dX) + (dX < 0 ? Math.PI : 0);
+                var dAF = (Math.atan(dY / dX) + (dX < 0 ? Math.PI : 0) + 2 * Math.PI) % (2 * Math.PI) - this.angleFacing;
+                if (Math.abs(dAF) > Math.PI) dAF = dAF - Math.sign(dAF) * 2 * Math.PI;
+                this.angleFacing = (this.angleFacing + Math.sign(dAF) * Math.min(Math.abs(dAF), 0.1) + 2 * Math.PI) % (2 * Math.PI);
 
                 var v = _matterJs2.default.Vector.normalise({ x: dX, y: dY });
                 _matterJs2.default.Body.setVelocity(this.body, {
@@ -1717,8 +1826,18 @@ var Zombie = function (_Mob) {
             }
 
             if (this.targetTimer <= 0) {
-                var playerId = Object.keys(core.playerNames)[0];
-                if (playerId) this.targetEntity = core.entities[playerId];
+                var cd = -1;
+                var closest = null;
+                for (var playerId in core.playerNames) {
+                    var ent = core.entities[playerId];
+                    if (ent instanceof _Player2.default === false) continue;
+                    var d = ent.distanceFrom(this.x, this.y);
+                    if (d < cd || cd === -1) {
+                        closest = ent;
+                        cd = d;
+                    }
+                }
+                if (closest) this.targetEntity = closest;
             } else this.targetTimer -= core.getUpdateDelta();
 
             return needsUpdate;

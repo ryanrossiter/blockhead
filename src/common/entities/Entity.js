@@ -22,12 +22,17 @@ export default class Entity {
 
         this.hashCode = Helpers.hashCode(this.id);
         this.needsUpdate = true; // Start with updating the clients
+        this.serverSideOnly = false;
         this.deleted = false;
 
         if (this[_data].w === -1 || this[_data].h === -1) {
             this[_data].w = this[_data].h = this[_data].r * 2;
         }
     };
+
+    distanceFrom(x, y) {
+        return Math.sqrt(Math.pow(this.x - x, 2) + Math.pow(this.y - y, 2));
+    }
 
     setPos(newX, newY) {
         this[_data].x = newX;

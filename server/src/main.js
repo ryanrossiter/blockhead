@@ -12,7 +12,7 @@ import WorldBuilder from '../../src/common/maps/WorldBuilder';
 
 import Mob from "../../src/common/entities/Mob";
 import Player from "../../src/common/entities/Player";
-import Zombie from "../../src/common/entities/Zombie";
+import ZombieSpawner from "../../src/common/entities/ZombieSpawner";
 import { ENTITIES } from "../../src/common/common";
 
 import Matter from 'matter-js';
@@ -45,24 +45,24 @@ const Core = {
 
         WorldBuilder.Build(Physics.engine.world, Test1);
 
-        Core.entity.create(Zombie, {
-            x: 15,
-            y: 15,
+        Core.entity.create(ZombieSpawner, {
+            x: 30,
+            y: 30,
         });
 
-        Core.entity.create(Zombie, {
-            x: -15,
-            y: 15,
+        Core.entity.create(ZombieSpawner, {
+            x: -30,
+            y: 30,
         });
 
-        Core.entity.create(Zombie, {
-            x: 15,
-            y: -15,
+        Core.entity.create(ZombieSpawner, {
+            x: 30,
+            y: -30,
         });
 
-        Core.entity.create(Zombie, {
-            x: -15,
-            y: -15,
+        Core.entity.create(ZombieSpawner, {
+            x: -30,
+            y: -30,
         });
 
         setInterval(this.update.bind(this), this.updateInterval);
@@ -79,12 +79,14 @@ const Core = {
     },
 
     update: function() {
+        Matter.Engine.update(Physics.engine, this.getUpdateDelta());
+
         var updatedEntities = [];
         var deletedEntities = [];
         for (var id in this.entities) {
             if (this.entities.hasOwnProperty(id)) {
                 var e = this.entities[id];
-                if (e.update(this)) { // update returns true if the client should recieve an update
+                if (e.update(this) && e.serverSideOnly === false) { // update returns true if the client should recieve an update
                     e.needsUpdate = false;
                     updatedEntities.push(e.toData());
                 }
@@ -103,7 +105,6 @@ const Core = {
             this.entity.deleteAll(deletedEntities);
         }
 
-        Matter.Engine.update(Physics.engine, this.getUpdateDelta());
         this.lastUpdate = Date.now();
     },
 
@@ -398,7 +399,7 @@ const Core = {
             updateAll: function(full) {
                 var es = [];
                 for (var id in Core.entities) {
-                    if (Core.entities.hasOwnProperty(id)) {
+                    if (Core.entities.hasOwnProperty(id) && Core.entities[id].serverSideOnly === false) {
                         es.push(Core.entities[id].toData(full)); // maybe only recreate data if it has changed?
                     }
                 }

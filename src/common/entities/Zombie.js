@@ -1,5 +1,6 @@
 import Helpers from '../helpers';
 import Mob from './Mob';
+import Player from './Player';
 import COMMON from '../common';
 let { ENTITIES } = COMMON;
 
@@ -39,7 +40,9 @@ export default class Zombie extends Mob {
         if (this.targetEntity) {
             let dX = this.targetEntity.x - this.x;
             let dY = this.targetEntity.y - this.y;
-            this.angleFacing = Math.atan(dY / dX) + (dX < 0? Math.PI : 0);
+            let dAF = (Math.atan(dY / dX) + (dX < 0? Math.PI : 0) + 2 * Math.PI) % (2 * Math.PI) - this.angleFacing;
+            if (Math.abs(dAF) > Math.PI) dAF = dAF - Math.sign(dAF) * 2 * Math.PI;
+            this.angleFacing = (this.angleFacing + Math.sign(dAF) * Math.min(Math.abs(dAF), 0.1) + 2 * Math.PI) % (2 * Math.PI);
 
             let v = Matter.Vector.normalise({ x: dX, y: dY });
             Matter.Body.setVelocity(this.body, {
@@ -49,8 +52,18 @@ export default class Zombie extends Mob {
         }
 
         if (this.targetTimer <= 0) {
-            let playerId = Object.keys(core.playerNames)[0];
-            if (playerId) this.targetEntity = core.entities[playerId];
+            let cd = -1;
+            let closest = null;
+            for (const playerId in core.playerNames) {
+                let ent = core.entities[playerId];
+                if (ent instanceof Player === false) continue;
+                let d = ent.distanceFrom(this.x, this.y)
+                if (d < cd || cd === -1) {
+                    closest = ent;
+                    cd = d;
+                }
+            }
+            if (closest) this.targetEntity = closest;
         } else this.targetTimer -= core.getUpdateDelta();
 
         return needsUpdate;

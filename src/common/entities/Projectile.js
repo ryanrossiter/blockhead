@@ -5,6 +5,7 @@ import COMMON from '../common';
 let { ENTITIES } = COMMON;
 
 import Matter from 'matter-js';
+import Physics from '../physics';
 
 const _data = Symbol('data');
 const SCHEMA = {
@@ -12,7 +13,7 @@ const SCHEMA = {
     type: ENTITIES.PROJECTILE
 };
 
-const DEFAULT_LIFETIME = 1000;
+const DEFAULT_LIFETIME = 2500;
 
 export default class Projectile extends PhysicsEntity {
     get type() { return this[_data].type }
@@ -25,8 +26,9 @@ export default class Projectile extends PhysicsEntity {
 
         this[_data] = Helpers.mask(SCHEMA, data);
 
-        this.body.frictionAir = 0.01;
-        this.body.restitution = 0.9;
+        this.body.frictionAir = 0;
+        this.body.restitution = 0;
+        this.body.mass = 0.3;
 
         this.lifetime = DEFAULT_LIFETIME;
     };
@@ -35,8 +37,10 @@ export default class Projectile extends PhysicsEntity {
         if (entity && entity.player === this.player) {
             Matter.Pair.setActive(pair, false);
         } else {
-            if (entity && entity instanceof Mob) {
-                entity.health = entity.health - 1;
+            if (Physics.isClient === false) {
+                if (entity && entity instanceof Mob) {
+                    entity.health = entity.health - 1;
+                }
             }
             this.deleted = true;
         }

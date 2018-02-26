@@ -21,6 +21,9 @@ const material = new THREE.MeshToonMaterial( {
     envMap: null
 } );
 
+const gunMat = new THREE.MeshBasicMaterial( { color: 0x333333 } );
+const gunGeom = new THREE.BoxGeometry( 2, 1, 1 );
+
 export default class ClientPlayer extends Player {
     get angleFacing() { return super.angleFacing; };
     set angleFacing(angle) { if (this.angleFacing !== angle) { super.angleFacing = angle; Core.socket.emit("move.angleFacing", { angle }); }};
@@ -33,15 +36,13 @@ export default class ClientPlayer extends Player {
         let cube = new THREE.Mesh( geometry, material );
         cube.position.z = 2.5;
         
-        geometry = new THREE.BoxGeometry( 2, 1, 1 );
-        var mat = new THREE.MeshBasicMaterial( { color: 0x333333 } );
-        let ting = new THREE.Mesh( geometry, mat );
-        ting.position.z = 3;
-        ting.position.x = 3;
+        let gun = new THREE.Mesh( gunGeom, gunMat );
+        gun.position.z = 3;
+        gun.position.x = 3;
 
         this.group = new THREE.Group();
         this.group.add(cube);
-        this.group.add(ting);
+        this.group.add(gun);
         this.group.position.x = this.x;
         this.group.position.y = this.y;
 

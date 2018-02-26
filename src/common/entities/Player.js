@@ -17,8 +17,8 @@ const SCHEMA = {
 };
 
 const ACCELERATION = 0.1;
-const SHOOT_DELAY = 200;
-const PROJECTILE_SPEED = 2;
+const SHOOT_DELAY = 100;
+const PROJECTILE_SPEED = 2.5;
 
 export default class Player extends Mob {
     get type() { return this[_data].type }
