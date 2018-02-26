@@ -1,0 +1,26 @@
+{
+  "name": "blockhead",
+  "version": "0.1.0",
+  "description": "Blockhead project, npm start runs the webpack-dev-server.",
+  "scripts": {
+    "start": "webpack-dev-server",
+    "build": "webpack"
+  },
+  "dependencies": {
+    "matter-js": "^0.14.1",
+    "socket.io-client": "^2.0.4",
+    "stats.js": "git+https://github.com/mrdoob/stats.js.git",
+    "three": "^0.88.0"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.2",
+    "babel-plugin-transform-es2015-parameters": "^6.24.1",
+    "babel-preset-env": "^1.6.1",
+    "connect": "^3.6.5",
+    "serve-static": "^1.13.2",
+    "webpack": "^3.11.0",
+    "webpack-dev-server": "^2.11.1"
+  }
+}
