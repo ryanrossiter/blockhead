@@ -5,6 +5,7 @@ var ENTITIES = {
 	PLAYER: 3,
 	PROJECTILE: 4,
 	ZOMBIE: 5,
+	BARREL: 6
 };
 
 var COLORS = {

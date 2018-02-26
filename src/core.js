@@ -10,6 +10,7 @@ import Matter from 'matter-js';
 import Stats from 'stats.js';
 
 const UPDATE_INTERVAL = 1000 / 15;
+const PHYSICS_STEP_TIME = 1000 / 60; // 60 ticks
 
 const Core = {
     isClient: true,
@@ -17,7 +18,8 @@ const Core = {
     scene: null,
     camera: null,
     renderer: null,
-    frameTime: 0,
+    physicsTimeDelta: PHYSICS_STEP_TIME, //the amount of time that the physics engine is behind by
+    lastFrameTime: 0,
 
     keys: [],
     mousePosition: { x: -1, y: -1 },
@@ -78,6 +80,7 @@ const Core = {
         SceneBuilder.Build(this.scene, Test1);
         WorldBuilder.Build(Physics.engine.world, Test1);
 
+        this.lastFrameTime = Date.now();
         this.runFrame();
 
         /*
@@ -111,10 +114,16 @@ const Core = {
     },
 
     runFrame: function() {
-        // this.stats.begin();
+        this.stats.begin();
         // let en = Object.values(this.entities)[0];
         // if (en) console.log(en.body.position, en.body.velocity);
-        Matter.Engine.update(Physics.engine, this.frameTime);
+        if (this.physicsTimeDelta >= PHYSICS_STEP_TIME) {
+            Matter.Engine.update(Physics.engine, PHYSICS_STEP_TIME);
+            this.physicsTimeDelta -= PHYSICS_STEP_TIME;
+        }
+
+        this.physicsTimeDelta += Date.now() - this.lastFrameTime;
+
         //if (en) console.log(en.body.position);
         // update positions of drawn geometry
         for (var e in this.entities) {
@@ -123,7 +132,9 @@ const Core = {
             }
         }
         this.renderer.render(this.scene, this.camera);
-        this.frameTime = this.stats.end();
+        this.stats.end();
+        
+        this.lastFrameTime = Date.now();
 
         requestAnimationFrame(this.runFrame.bind(this));
     },

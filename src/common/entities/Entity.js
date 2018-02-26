@@ -16,7 +16,9 @@ const SCHEMA = {
 
 export default class Entity {
     constructor(data) {
-        this[_data] = Helpers.mask(SCHEMA, data);
+        this[_data] = Helpers.mask(SCHEMA, Object.assign({}, data, {
+            id: data.id || Helpers.createId(),
+        }));
         // protect the id once it's set, not really necessary but a neat feature
         this[_data]._protect.push('id');
 
@@ -42,6 +44,10 @@ export default class Entity {
     move(dx, dy) {
         setPos.call(this, this[_data].x + dx, this[_data].y + dy);
     };
+
+    inRect(x0, y0, x1, y1) {
+        return !(this.x < x0 || this.y < y0 || this.x > x1 || this.y > y1);
+    }
 
     update(core) { return this.needsUpdate; }; // returns true if we need to send an update to the client.
 

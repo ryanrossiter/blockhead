@@ -70,5 +70,14 @@ export default {
             hash = hash & hash; // Convert to 32bit integer
         }
         return hash;
+    },
+    createId: () => {
+        function s4() {
+            return Math.floor((1 + Math.random()) * 0x10000)
+                .toString(16)
+                .substring(1);
+        }
+        return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+            s4() + '-' + s4() + s4() + s4();
     }
 };

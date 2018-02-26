@@ -24,10 +24,17 @@ export default class Mob extends PhysicsEntity {
         this[_data] = Helpers.mask(SCHEMA, data);
     };
 
+    onDeath(core) {
+
+    }
+
     update(core) {
         let needsUpdate = super.update(core);
 
-        if (this.health <= 0) this.deleted = true;
+        if (this.health <= 0) {
+            this.deleted = true;
+            this.onDeath(core);
+        }
 
         return needsUpdate;
     }

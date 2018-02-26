@@ -79,7 +79,8 @@ var ENTITIES = {
 	MOB: 2,
 	PLAYER: 3,
 	PROJECTILE: 4,
-	ZOMBIE: 5
+	ZOMBIE: 5,
+	BARREL: 6
 };
 
 var COLORS = {
@@ -203,6 +204,12 @@ exports.default = {
             hash = hash & hash; // Convert to 32bit integer
         }
         return hash;
+    },
+    createId: function createId() {
+        function s4() {
+            return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+        }
+        return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
     }
 };
 
@@ -292,11 +299,17 @@ var Mob = function (_PhysicsEntity) {
     }
 
     _createClass(Mob, [{
+        key: 'onDeath',
+        value: function onDeath(core) {}
+    }, {
         key: 'update',
         value: function update(core) {
             var needsUpdate = _get(Mob.prototype.__proto__ || Object.getPrototypeOf(Mob.prototype), 'update', this).call(this, core);
 
-            if (this.health <= 0) this.deleted = true;
+            if (this.health <= 0) {
+                this.deleted = true;
+                this.onDeath(core);
+            }
 
             return needsUpdate;
         }
@@ -622,7 +635,9 @@ var Entity = function () {
     function Entity(data) {
         _classCallCheck(this, Entity);
 
-        this[_data] = _helpers2.default.mask(SCHEMA, data);
+        this[_data] = _helpers2.default.mask(SCHEMA, Object.assign({}, data, {
+            id: data.id || _helpers2.default.createId()
+        }));
         // protect the id once it's set, not really necessary but a neat feature
         this[_data]._protect.push('id');
 
@@ -651,6 +666,11 @@ var Entity = function () {
         key: 'move',
         value: function move(dx, dy) {
             setPos.call(this, this[_data].x + dx, this[_data].y + dy);
+        }
+    }, {
+        key: 'inRect',
+        value: function inRect(x0, y0, x1, y1) {
+            return !(this.x < x0 || this.y < y0 || this.x > x1 || this.y > y1);
         }
     }, {
         key: 'update',
@@ -995,11 +1015,19 @@ var _Player = __webpack_require__(7);
 
 var _Player2 = _interopRequireDefault(_Player);
 
+var _Barrel = __webpack_require__(16);
+
+var _Barrel2 = _interopRequireDefault(_Barrel);
+
 var _ZombieSpawner = __webpack_require__(14);
 
 var _ZombieSpawner2 = _interopRequireDefault(_ZombieSpawner);
 
 var _common = __webpack_require__(0);
+
+var _helpers = __webpack_require__(2);
+
+var _helpers2 = _interopRequireDefault(_helpers);
 
 var _matterJs = __webpack_require__(1);
 
@@ -1060,6 +1088,11 @@ const Core = {
         Core.entity.create(_ZombieSpawner2.default, {
             x: -30,
             y: -30
+        });
+
+        Core.entity.create(_Barrel2.default, {
+            x: 10,
+            y: 10
         });
 
         setInterval(this.update.bind(this), this.updateInterval);
@@ -1140,18 +1173,11 @@ const Core = {
 
     // local entity functions
     entity: {
-        createId: function () {
-            function s4() {
-                return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
-            }
-            return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
-        },
-
         // Used locally
         create: function (klass, data) {
             if (!data.id) {
-                var id = this.createId();
-                while (Core.entities.hasOwnProperty(id)) id = this.createId(); // ensure uniqueness
+                var id = _helpers2.default.createId();
+                while (Core.entities.hasOwnProperty(id)) id = _helpers2.default.createId(); // ensure uniqueness
                 data.id = id;
             }
 
@@ -1859,6 +1885,117 @@ var Zombie = function (_Mob) {
 }(_Mob3.default);
 
 exports.default = Zombie;
+;
+
+/***/ }),
+/* 16 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _helpers = __webpack_require__(2);
+
+var _helpers2 = _interopRequireDefault(_helpers);
+
+var _Mob2 = __webpack_require__(3);
+
+var _Mob3 = _interopRequireDefault(_Mob2);
+
+var _common = __webpack_require__(0);
+
+var _common2 = _interopRequireDefault(_common);
+
+var _matterJs = __webpack_require__(1);
+
+var _matterJs2 = _interopRequireDefault(_matterJs);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var ENTITIES = _common2.default.ENTITIES;
+
+
+var _data = Symbol('data');
+var SCHEMA = {
+    _protect: ['type'],
+    type: ENTITIES.BARREL
+};
+
+var EXPLOSION_RADIUS = 9;
+
+var Barrel = function (_Mob) {
+    _inherits(Barrel, _Mob);
+
+    _createClass(Barrel, [{
+        key: 'type',
+        get: function get() {
+            return this[_data].type;
+        }
+    }]);
+
+    function Barrel(data) {
+        _classCallCheck(this, Barrel);
+
+        var _this = _possibleConstructorReturn(this, (Barrel.__proto__ || Object.getPrototypeOf(Barrel)).call(this, Object.assign({}, data, {
+            health: data.health || 3
+        })));
+
+        _this[_data] = _helpers2.default.mask(SCHEMA, data);
+
+        _this.body.frictionAir = 0.7;
+        _this.body.frictionStatic = 0.7;
+        return _this;
+    }
+
+    _createClass(Barrel, [{
+        key: 'onDeath',
+        value: function onDeath(core) {
+            // damage entities in radius
+            var es = core.entity.getInRect(this.x - EXPLOSION_RADIUS, this.y - EXPLOSION_RADIUS, this.x + EXPLOSION_RADIUS, this.y + EXPLOSION_RADIUS);
+            for (var i = 0; i < es.length; i++) {
+                if (es[i] instanceof _Mob3.default && es[i].distanceFrom(this.x, this.y) <= EXPLOSION_RADIUS) {
+                    es[i].health = es[i].health - 1;
+                }
+            }
+        }
+    }, {
+        key: 'update',
+        value: function update(core) {
+            var needsUpdate = _get(Barrel.prototype.__proto__ || Object.getPrototypeOf(Barrel.prototype), 'update', this).call(this, core);
+
+            return needsUpdate;
+        }
+    }, {
+        key: 'toData',
+        value: function toData() {
+            return Object.assign({}, _get(Barrel.prototype.__proto__ || Object.getPrototypeOf(Barrel.prototype), 'toData', this).call(this), _helpers2.default.mask(SCHEMA, this[_data], true));
+        }
+    }, {
+        key: 'dataUpdate',
+        value: function dataUpdate(data, now) {
+            _get(Barrel.prototype.__proto__ || Object.getPrototypeOf(Barrel.prototype), 'dataUpdate', this).call(this, data, now);
+            this[_data] = _helpers2.default.mask(this[_data], data);
+        }
+    }]);
+
+    return Barrel;
+}(_Mob3.default);
+
+exports.default = Barrel;
 ;
 
 /***/ })

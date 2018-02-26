@@ -12,8 +12,10 @@ import WorldBuilder from '../../src/common/maps/WorldBuilder';
 
 import Mob from "../../src/common/entities/Mob";
 import Player from "../../src/common/entities/Player";
+import Barrel from "../../src/common/entities/Barrel";
 import ZombieSpawner from "../../src/common/entities/ZombieSpawner";
 import { ENTITIES } from "../../src/common/common";
+import Helpers from "../../src/common/helpers";
 
 import Matter from 'matter-js';
 
@@ -63,6 +65,11 @@ const Core = {
         Core.entity.create(ZombieSpawner, {
             x: -30,
             y: -30,
+        });
+
+        Core.entity.create(Barrel, {
+            x: 10,
+            y: 10,
         });
 
         setInterval(this.update.bind(this), this.updateInterval);
@@ -142,21 +149,11 @@ const Core = {
 
     // local entity functions
     entity: {
-        createId: function() {
-            function s4() {
-                return Math.floor((1 + Math.random()) * 0x10000)
-                    .toString(16)
-                    .substring(1);
-            }
-            return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
-                s4() + '-' + s4() + s4() + s4();
-        },
-
         // Used locally
         create: function(klass, data) {
             if (!data.id) {
-                var id = this.createId();
-                while (Core.entities.hasOwnProperty(id)) id = this.createId(); // ensure uniqueness
+                var id = Helpers.createId();
+                while (Core.entities.hasOwnProperty(id)) id = Helpers.createId(); // ensure uniqueness
                 data.id = id;
             }
 
