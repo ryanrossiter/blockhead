@@ -22,6 +22,8 @@ import Matter from 'matter-js';
 var MAX_NAME_LENGTH = 60;
 const PORT = 8000;
 
+const PHYSICS_STEP_TIME = 1000 / 60; // 60 ticks
+
 const Core = {
     isClient: false,
     io: null,
@@ -34,6 +36,8 @@ const Core = {
     gameUpdateBroadcastInterval: 1000,
     entities: {},
 
+    physicsTimeDelta: PHYSICS_STEP_TIME, //the amount of time that the physics engine is behind by
+
     bounds: { x0: 0, y0: 0, x1: 3000, y1: 3000 },
     leaderboard: [], // Array containing {name, score} dicts
 
@@ -45,32 +49,13 @@ const Core = {
 
         Physics.CreateEngine(this);
 
-        WorldBuilder.Build(Physics.engine.world, Test1);
+        let map = Test1;
+        WorldBuilder.Build(Physics.engine.world, map);
 
-        Core.entity.create(ZombieSpawner, {
-            x: 30,
-            y: 30,
-        });
-
-        Core.entity.create(ZombieSpawner, {
-            x: -30,
-            y: 30,
-        });
-
-        Core.entity.create(ZombieSpawner, {
-            x: 30,
-            y: -30,
-        });
-
-        Core.entity.create(ZombieSpawner, {
-            x: -30,
-            y: -30,
-        });
-
-        Core.entity.create(Barrel, {
-            x: 10,
-            y: 10,
-        });
+        for (var i = 0; i < map.entityQueue.length; i++) {
+            let e = map.entityQueue[i];
+            Core.entity.create(e.entity, e.data);
+        }
 
         setInterval(this.update.bind(this), this.updateInterval);
         //setInterval(this.updateLeaderboard.bind(this), this.leaderboardUpdateInterssval);
@@ -86,7 +71,12 @@ const Core = {
     },
 
     update: function() {
-        Matter.Engine.update(Physics.engine, this.getUpdateDelta());
+        if (this.physicsTimeDelta >= PHYSICS_STEP_TIME) {
+            Matter.Engine.update(Physics.engine, PHYSICS_STEP_TIME);
+            this.physicsTimeDelta -= PHYSICS_STEP_TIME;
+        }
+
+        this.physicsTimeDelta += this.getUpdateDelta();
 
         var updatedEntities = [];
         var deletedEntities = [];
@@ -126,6 +116,7 @@ const Core = {
         client.on("join", this.event.join);
         client.on("disconnect", this.event.onClientDisconnect);
 
+        client.on("move.interact", this.event.move.interact);
         client.on("move.shoot", this.event.move.shoot);
         client.on("move.shoot.stop", this.event.move.shoot.stop);
         client.on("move.forward", this.event.move.forward);
@@ -306,6 +297,12 @@ const Core = {
         },
 
         move: {
+            interact: function() {
+                if (Core.entities.hasOwnProperty(this.id)) {
+                    Core.entities[this.id].interact(Core);
+                }
+            },
+
             shoot: new function() {
                 var shoot = function() {
                     if (Core.entities.hasOwnProperty(this.id)) {

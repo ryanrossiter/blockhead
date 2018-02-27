@@ -1,6 +1,7 @@
 import Helpers from '../helpers';
 import Mob from './Mob';
 import Projectile from './Projectile';
+import FloatingItem from './FloatingItem';
 import COMMON from '../common';
 import Matter from 'matter-js';
 let { ENTITIES } = COMMON;
@@ -19,6 +20,7 @@ const SCHEMA = {
 const ACCELERATION = 0.1;
 const SHOOT_DELAY = 100;
 const PROJECTILE_SPEED = 2.5;
+const INTERACT_RADIUS = 8;
 
 export default class Player extends Mob {
     get type() { return this[_data].type }
@@ -40,6 +42,24 @@ export default class Player extends Mob {
 
         this.shootTimer = 0;
     };
+
+    interact(core) {
+        // interact with closest entity in INTERACT_RADIUS
+        let es = core.entity.getInRect(this.x - INTERACT_RADIUS, this.y - INTERACT_RADIUS, this.x + INTERACT_RADIUS, this.y + INTERACT_RADIUS);
+        let e = null;
+        let closest = INTERACT_RADIUS;
+        for (var i = 0; i < es.length; i++) {
+            let d = es[i].distanceFrom(this.x, this.y);
+            if (es[i] instanceof FloatingItem && d <= INTERACT_RADIUS) {
+                closest = d;
+                e = es[i];
+            }
+        }
+
+        if (e) {
+            e.deleted = true;
+        }
+    }
 
     update(core) {
         let needsUpdate = super.update(core);
@@ -71,12 +91,15 @@ export default class Player extends Mob {
     }
 
     _shoot(core) {
+        let xv = Math.cos(this.angleFacing);
+        let yv = Math.sin(this.angleFacing);
         core.entity.create(Projectile, {
             player: this.player,
-            x: this.x,
-            y: this.y,
-            xVelocity: Math.cos(this.angleFacing) * PROJECTILE_SPEED,
-            yVelocity: Math.sin(this.angleFacing) * PROJECTILE_SPEED,
+            x: this.x + yv + xv, // add these to make bullet come out of gun, 1 unit to the right side and 1 unit forward
+            y: this.y - xv + yv,
+            xVelocity: xv * PROJECTILE_SPEED,
+            yVelocity: yv * PROJECTILE_SPEED,
+            angle: this.angleFacing
         });
     }
 

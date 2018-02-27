@@ -4,6 +4,7 @@ import COMMON from '../common/common';
 let { KEYS } = COMMON;
 
 import * as THREE from 'three';
+import GunModels from '../models/GunModels';
 
 // basic monochromatic energy preservation
 const alpha = 0.8;
@@ -21,8 +22,24 @@ const material = new THREE.MeshToonMaterial( {
     envMap: null
 } );
 
+const outlineMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, side: THREE.BackSide } );
+
 const gunMat = new THREE.MeshBasicMaterial( { color: 0x333333 } );
 const gunGeom = new THREE.BoxGeometry( 2, 1, 1 );
+
+let canvas = document.createElement("canvas");
+canvas.width = 32;
+canvas.height = 8;
+let ctx = canvas.getContext("2d");
+function generateHealthBarTexture(health, maxHealth) {
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#FF2222";
+    ctx.fillRect(1, 1, canvas.width - 2, canvas.height - 2);
+    ctx.fillStyle = "#22FF22";
+    ctx.fillRect(1, 1, health / maxHealth * canvas.width - 2, canvas.height - 2);
+    return new THREE.TextureLoader().load(canvas.toDataURL());
+}
 
 export default class ClientPlayer extends Player {
     get angleFacing() { return super.angleFacing; };
@@ -35,23 +52,44 @@ export default class ClientPlayer extends Player {
         //var material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
         let cube = new THREE.Mesh( geometry, material );
         cube.position.z = 2.5;
+        let outline = new THREE.Mesh( geometry, outlineMaterial );
+        outline.position.z = 2.5;
+        outline.scale.multiplyScalar(1.05)
         
-        let gun = new THREE.Mesh( gunGeom, gunMat );
+        let gun = GunModels.handgunMesh;
         gun.position.z = 3;
         gun.position.x = 3;
+        gun.position.y = -1;
 
         this.group = new THREE.Group();
         this.group.add(cube);
+        this.group.add(outline);
         this.group.add(gun);
         this.group.position.x = this.x;
         this.group.position.y = this.y;
+        this.group.position.z = 0.25
+
+        this.hpSpriteMaterial = new THREE.SpriteMaterial( { map: generateHealthBarTexture(this.health, 10) } );
+        let hpSprite = new THREE.Sprite( this.hpSpriteMaterial );
+        hpSprite.position.z = 6.5;
+        hpSprite.scale.x = canvas.width / canvas.height;
+        hpSprite.scale.multiplyScalar(0.5);
+        this.group.add(hpSprite);
 
         Core.scene.add( this.group );
+
+        this.wasInteractPressed = false;
     }
 
     dataUpdate(data, now) {
         // dont update angle facing for current player
-        if (data.id === Core.playerId) delete data.angleFacing;
+        if (data.id === Core.playerId) {
+            delete data.angleFacing;
+        }
+
+        if (data.health !== this.health) {
+            this.hpSpriteMaterial.map = generateHealthBarTexture(data.health, 10);
+        }
 
         super.dataUpdate(data, now);
     }
@@ -74,12 +112,19 @@ export default class ClientPlayer extends Player {
         this.group.position.y = this.body.position.y;
         this.group.rotation.z = this.angleFacing;
 
-        let hop = Math.sin(Date.now() / 35 + this.hashCode) * this.body.speed * 1.5;
-        this.group.position.z = hop;
+        let hop = Math.sin(Date.now() / 45 + this.hashCode) * this.body.speed * 1.5;
+        this.group.position.z = Math.max(hop, 0) + 0.25;
     }
 
     clientUpdate() {
         if (this.id === Core.playerId) {
+            if (Core.keys[KEYS.E] && !this.wasInteractPressed) {
+                Core.socket.emit("move.interact");
+                this.wasInteractPressed = true;
+            } else if (this.wasInteractPressed && !Core.keys[KEYS.E]) {
+                this.wasInteractPressed = false;
+            }
+
             if (Core.mouseButtons[1]) {
                 if (super.shoot === false) {
                     Core.socket.emit("move.shoot");

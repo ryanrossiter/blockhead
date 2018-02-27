@@ -9,22 +9,28 @@ const material = new THREE.MeshToonMaterial( {
     //map: imgTexture,
     //bumpMap: imgTexture,
     //bumpScale: bumpScale,
-    color: 0x111111,
+    color: 0xCC1111,
     specular: 0.2,
     reflectivity: 0.2,
     shininess: 0.2,
     envMap: null
 } );
 
+const outlineMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, side: THREE.BackSide } );
+
 export default class ClientBarrel extends Barrel {
     constructor(data) {
         super(data);
 
-        this.group = new THREE.Mesh(barrelGeom, material);
-
+        let barrel = new THREE.Mesh(barrelGeom, material);
+        let barrelOutline = new THREE.Mesh(barrelGeom, outlineMaterial);
+        barrelOutline.scale.multiplyScalar(1.05);
+        this.group = new THREE.Group;
+        this.group.add(barrel);
+        this.group.add(barrelOutline);
         this.group.position.x = this.x;
         this.group.position.y = this.y;
-        this.group.position.z = 1.5;
+        this.group.position.z = 1.5 + 0.2;
         this.group.rotation.x = Math.PI / 2;
 
         Core.scene.add( this.group );

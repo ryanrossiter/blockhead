@@ -11,7 +11,7 @@ const SCHEMA = {
     type: ENTITIES.BARREL,
 };
 
-const EXPLOSION_RADIUS = 9;
+const EXPLOSION_RADIUS = 15;
 
 export default class Barrel extends Mob {
     get type() { return this[_data].type }
@@ -23,8 +23,7 @@ export default class Barrel extends Mob {
 
         this[_data] = Helpers.mask(SCHEMA, data);
 
-        this.body.frictionAir = 0.7;
-        this.body.frictionStatic = 0.7;
+        Matter.Body.setStatic(this.body, true);
     };
 
     onDeath(core) {
@@ -32,7 +31,7 @@ export default class Barrel extends Mob {
         let es = core.entity.getInRect(this.x - EXPLOSION_RADIUS, this.y - EXPLOSION_RADIUS, this.x + EXPLOSION_RADIUS, this.y + EXPLOSION_RADIUS);
         for (var i = 0; i < es.length; i++) {
             if (es[i] instanceof Mob && es[i].distanceFrom(this.x, this.y) <= EXPLOSION_RADIUS) {
-                es[i].health = es[i].health - 1;
+                es[i].health = es[i].health - 3;
             }
         }
     }

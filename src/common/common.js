@@ -5,8 +5,13 @@ var ENTITIES = {
 	PLAYER: 3,
 	PROJECTILE: 4,
 	ZOMBIE: 5,
-	BARREL: 6
+	BARREL: 6,
+	FLOATING_ITEM: 7
 };
+
+var ITEMS = {
+	TEST: 0
+}
 
 var COLORS = {
 	BACKGROUND: "#FCFCFD",
@@ -34,6 +39,7 @@ var KEYS = {
 	D: 		68,
 	W: 		87,
 	SPACE:  32,
+	E:      69,
 };
 
 var DEFAULT_FONT = "14px Arial Black";
@@ -44,6 +50,7 @@ var WORLD_GRAVITY = {
 
 export default {
 	ENTITIES,
+	ITEMS,
 	COLORS,
 	KEYS,
 	DEFAULT_FONT

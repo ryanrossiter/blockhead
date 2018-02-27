@@ -20,8 +20,8 @@ export default class Projectile extends PhysicsEntity {
 
     constructor(data) {
         super(Object.assign({}, data, {
-            w: data.w || 2,
-            h: data.h || 2,
+            w: data.w || 1,
+            h: data.h || 1,
         }));
 
         this[_data] = Helpers.mask(SCHEMA, data);

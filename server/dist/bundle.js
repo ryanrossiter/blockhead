@@ -80,7 +80,12 @@ var ENTITIES = {
 	PLAYER: 3,
 	PROJECTILE: 4,
 	ZOMBIE: 5,
-	BARREL: 6
+	BARREL: 6,
+	FLOATING_ITEM: 7
+};
+
+var ITEMS = {
+	TEST: 0
 };
 
 var COLORS = {
@@ -108,7 +113,8 @@ var KEYS = {
 	S: 83,
 	D: 68,
 	W: 87,
-	SPACE: 32
+	SPACE: 32,
+	E: 69
 };
 
 var DEFAULT_FONT = "14px Arial Black";
@@ -119,6 +125,7 @@ var WORLD_GRAVITY = {
 
 exports.default = {
 	ENTITIES: ENTITIES,
+	ITEMS: ITEMS,
 	COLORS: COLORS,
 	KEYS: KEYS,
 	DEFAULT_FONT: DEFAULT_FONT
@@ -353,31 +360,25 @@ exports.default = {
     engine: null,
     isClient: false,
 
-    onCollision: function onCollision(pair, bodyA, bodyB) {
+    onCollision: function onCollision(pair, bodyA, bodyB, start) {
         if (bodyA.hasOwnProperty('entityId') || bodyB.hasOwnProperty('entityId')) {
             var entityA = bodyA.entityId ? this.entities[bodyA.entityId] : null;
             var entityB = bodyB.entityId ? this.entities[bodyB.entityId] : null;
 
             if (entityA) {
-                entityA.onCollision(entityB, pair, pair.bodyA);
+                if (start) entityA.onCollision(entityB, pair, pair.bodyA);else entityA.onCollisionEnd(entityB, pair, pair.bodyA);
             }
 
             if (entityB) {
-                entityB.onCollision(entityA, pair, pair.bodyB);
+                if (start) entityB.onCollision(entityA, pair, pair.bodyA);else entityB.onCollisionEnd(entityA, pair, pair.bodyA);
             }
         }
     },
 
-    CreateEngine: function CreateEngine(core) {
+    collisionIterator: function collisionIterator(start) {
         var _this = this;
 
-        this.engine = _matterJs2.default.Engine.create();
-        this.engine.world.gravity.y = 0;
-
-        this.isClient = core.isClient;
-
-        this.onCollision = this.onCollision.bind(core);
-        _matterJs2.default.Events.on(this.engine, "collisionStart", function (event) {
+        return function (event) {
             for (var i = 0; i < event.pairs.length; i++) {
                 var bodyA = event.pairs[i].bodyA;
                 var bodyB = event.pairs[i].bodyB;
@@ -386,9 +387,22 @@ exports.default = {
                     bodyA = bodyA.parent;
                 }while (bodyB.parent != bodyB) {
                     bodyB = bodyB.parent;
-                }_this.onCollision(event.pairs[i], bodyA, bodyB);
+                }_this.onCollision(event.pairs[i], bodyA, bodyB, start);
             }
-        });
+        };
+    },
+
+
+    CreateEngine: function CreateEngine(core) {
+
+        this.engine = _matterJs2.default.Engine.create();
+        this.engine.world.gravity.y = 0;
+
+        this.isClient = core.isClient;
+
+        this.onCollision = this.onCollision.bind(core);
+        _matterJs2.default.Events.on(this.engine, "collisionStart", this.collisionIterator(true));
+        _matterJs2.default.Events.on(this.engine, "collisionEnd", this.collisionIterator(false));
     }
 };
 
@@ -532,6 +546,9 @@ var PhysicsEntity = function (_Entity) {
         key: 'onCollision',
         value: function onCollision(entity, pair, body) {}
     }, {
+        key: 'onCollisionEnd',
+        value: function onCollisionEnd(entity, pair, body) {}
+    }, {
         key: 'toData',
         value: function toData() {
             return Object.assign({}, _get(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'toData', this).call(this), _helpers2.default.mask(SCHEMA, this[_data], true));
@@ -541,6 +558,12 @@ var PhysicsEntity = function (_Entity) {
         value: function dataUpdate(data, now) {
             _get(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'dataUpdate', this).call(this, data);
             this[_data] = _helpers2.default.mask(this[_data], data);
+
+            if (this.body.position.x === NaN || this.body.position.y === NaN) {
+                console.warn("Body position is NaN, resetting to position...");
+                this.body.position.x = this.x;
+                this.body.position.y = this.y;
+            }
 
             var delay = 0;
             var xVelCorr = 0;
@@ -783,6 +806,10 @@ var _Projectile = __webpack_require__(13);
 
 var _Projectile2 = _interopRequireDefault(_Projectile);
 
+var _FloatingItem = __webpack_require__(17);
+
+var _FloatingItem2 = _interopRequireDefault(_FloatingItem);
+
 var _common = __webpack_require__(0);
 
 var _common2 = _interopRequireDefault(_common);
@@ -816,6 +843,7 @@ var SCHEMA = {
 var ACCELERATION = 0.1;
 var SHOOT_DELAY = 100;
 var PROJECTILE_SPEED = 2.5;
+var INTERACT_RADIUS = 8;
 
 var Player = function (_Mob) {
     _inherits(Player, _Mob);
@@ -889,6 +917,25 @@ var Player = function (_Mob) {
     }
 
     _createClass(Player, [{
+        key: 'interact',
+        value: function interact(core) {
+            // interact with closest entity in INTERACT_RADIUS
+            var es = core.entity.getInRect(this.x - INTERACT_RADIUS, this.y - INTERACT_RADIUS, this.x + INTERACT_RADIUS, this.y + INTERACT_RADIUS);
+            var e = null;
+            var closest = INTERACT_RADIUS;
+            for (var i = 0; i < es.length; i++) {
+                var d = es[i].distanceFrom(this.x, this.y);
+                if (es[i] instanceof _FloatingItem2.default && d <= INTERACT_RADIUS) {
+                    closest = d;
+                    e = es[i];
+                }
+            }
+
+            if (e) {
+                e.deleted = true;
+            }
+        }
+    }, {
         key: 'update',
         value: function update(core) {
             var needsUpdate = _get(Player.prototype.__proto__ || Object.getPrototypeOf(Player.prototype), 'update', this).call(this, core);
@@ -921,12 +968,15 @@ var Player = function (_Mob) {
     }, {
         key: '_shoot',
         value: function _shoot(core) {
+            var xv = Math.cos(this.angleFacing);
+            var yv = Math.sin(this.angleFacing);
             core.entity.create(_Projectile2.default, {
                 player: this.player,
-                x: this.x,
-                y: this.y,
-                xVelocity: Math.cos(this.angleFacing) * PROJECTILE_SPEED,
-                yVelocity: Math.sin(this.angleFacing) * PROJECTILE_SPEED
+                x: this.x + yv + xv, // add these to make bullet come out of gun, 1 unit to the right side and 1 unit forward
+                y: this.y - xv + yv,
+                xVelocity: xv * PROJECTILE_SPEED,
+                yVelocity: yv * PROJECTILE_SPEED,
+                angle: this.angleFacing
             });
         }
     }, {
@@ -1045,6 +1095,8 @@ global.window = {};
 var MAX_NAME_LENGTH = 60;
 const PORT = 8000;
 
+const PHYSICS_STEP_TIME = 1000 / 60; // 60 ticks
+
 const Core = {
     isClient: false,
     io: null,
@@ -1057,6 +1109,8 @@ const Core = {
     gameUpdateBroadcastInterval: 1000,
     entities: {},
 
+    physicsTimeDelta: PHYSICS_STEP_TIME, //the amount of time that the physics engine is behind by
+
     bounds: { x0: 0, y0: 0, x1: 3000, y1: 3000 },
     leaderboard: [], // Array containing {name, score} dicts
 
@@ -1068,32 +1122,13 @@ const Core = {
 
         _physics2.default.CreateEngine(this);
 
-        _WorldBuilder2.default.Build(_physics2.default.engine.world, _Test2.default);
+        let map = _Test2.default;
+        _WorldBuilder2.default.Build(_physics2.default.engine.world, map);
 
-        Core.entity.create(_ZombieSpawner2.default, {
-            x: 30,
-            y: 30
-        });
-
-        Core.entity.create(_ZombieSpawner2.default, {
-            x: -30,
-            y: 30
-        });
-
-        Core.entity.create(_ZombieSpawner2.default, {
-            x: 30,
-            y: -30
-        });
-
-        Core.entity.create(_ZombieSpawner2.default, {
-            x: -30,
-            y: -30
-        });
-
-        Core.entity.create(_Barrel2.default, {
-            x: 10,
-            y: 10
-        });
+        for (var i = 0; i < map.entityQueue.length; i++) {
+            let e = map.entityQueue[i];
+            Core.entity.create(e.entity, e.data);
+        }
 
         setInterval(this.update.bind(this), this.updateInterval);
         //setInterval(this.updateLeaderboard.bind(this), this.leaderboardUpdateInterssval);
@@ -1109,7 +1144,12 @@ const Core = {
     },
 
     update: function () {
-        _matterJs2.default.Engine.update(_physics2.default.engine, this.getUpdateDelta());
+        if (this.physicsTimeDelta >= PHYSICS_STEP_TIME) {
+            _matterJs2.default.Engine.update(_physics2.default.engine, PHYSICS_STEP_TIME);
+            this.physicsTimeDelta -= PHYSICS_STEP_TIME;
+        }
+
+        this.physicsTimeDelta += this.getUpdateDelta();
 
         var updatedEntities = [];
         var deletedEntities = [];
@@ -1150,6 +1190,7 @@ const Core = {
         client.on("join", this.event.join);
         client.on("disconnect", this.event.onClientDisconnect);
 
+        client.on("move.interact", this.event.move.interact);
         client.on("move.shoot", this.event.move.shoot);
         client.on("move.shoot.stop", this.event.move.shoot.stop);
         client.on("move.forward", this.event.move.forward);
@@ -1325,6 +1366,12 @@ const Core = {
         },
 
         move: {
+            interact: function () {
+                if (Core.entities.hasOwnProperty(this.id)) {
+                    Core.entities[this.id].interact(Core);
+                }
+            },
+
             shoot: new function () {
                 var shoot = function () {
                     if (Core.entities.hasOwnProperty(this.id)) {
@@ -1452,10 +1499,30 @@ var _helpers = __webpack_require__(11);
 
 var _helpers2 = _interopRequireDefault(_helpers);
 
+var _common = __webpack_require__(0);
+
+var _common2 = _interopRequireDefault(_common);
+
+var _Barrel = __webpack_require__(16);
+
+var _Barrel2 = _interopRequireDefault(_Barrel);
+
+var _ZombieSpawner = __webpack_require__(14);
+
+var _ZombieSpawner2 = _interopRequireDefault(_ZombieSpawner);
+
+var _FloatingItem = __webpack_require__(17);
+
+var _FloatingItem2 = _interopRequireDefault(_FloatingItem);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+var ITEMS = _common2.default.ITEMS;
+
+
 var Test1 = {
-    objQueue: []
+    objQueue: [],
+    entityQueue: []
 
     // border walls
 };_helpers2.default.GenerateWall(Test1, 0, 50, 102, 2);
@@ -1467,6 +1534,18 @@ _helpers2.default.GenerateWall(Test1, 0, 10, 10, 2);
 _helpers2.default.GenerateWall(Test1, 10, 0, 2, 10);
 _helpers2.default.GenerateWall(Test1, 0, -10, 10, 2);
 _helpers2.default.GenerateWall(Test1, -10, 0, 2, 10);
+
+Test1.entityQueue.push({ entity: _Barrel2.default, data: { x: 20, y: 20 } });
+Test1.entityQueue.push({ entity: _Barrel2.default, data: { x: 20, y: -20 } });
+Test1.entityQueue.push({ entity: _Barrel2.default, data: { x: -20, y: 20 } });
+Test1.entityQueue.push({ entity: _Barrel2.default, data: { x: -20, y: -20 } });
+
+Test1.entityQueue.push({ entity: _ZombieSpawner2.default, data: { x: 0, y: 35 } });
+Test1.entityQueue.push({ entity: _ZombieSpawner2.default, data: { x: 0, y: -35 } });
+Test1.entityQueue.push({ entity: _ZombieSpawner2.default, data: { x: 35, y: 0 } });
+Test1.entityQueue.push({ entity: _ZombieSpawner2.default, data: { x: -35, y: 0 } });
+
+Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: 5, y: 5, item: ITEMS.TEST } });
 
 exports.default = Test1;
 
@@ -1485,7 +1564,7 @@ exports.default = {
         map.objQueue.push({
             name: "rectangle",
             x: x, y: y, w: w, h: h, zHeight: 7,
-            color: 0x101010
+            color: 0x222222
         });
     }
 };
@@ -1602,8 +1681,8 @@ var Projectile = function (_PhysicsEntity) {
         _classCallCheck(this, Projectile);
 
         var _this = _possibleConstructorReturn(this, (Projectile.__proto__ || Object.getPrototypeOf(Projectile)).call(this, Object.assign({}, data, {
-            w: data.w || 2,
-            h: data.h || 2
+            w: data.w || 1,
+            h: data.h || 1
         })));
 
         _this[_data] = _helpers2.default.mask(SCHEMA, data);
@@ -1782,6 +1861,10 @@ var _matterJs = __webpack_require__(1);
 
 var _matterJs2 = _interopRequireDefault(_matterJs);
 
+var _physics = __webpack_require__(4);
+
+var _physics2 = _interopRequireDefault(_physics);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -1801,6 +1884,7 @@ var SCHEMA = {
 
 var ACCELERATION = 0.03;
 var TARGET_DELAY = 500;
+var ATTACK_DELAY = 1000;
 
 var Zombie = function (_Mob) {
     _inherits(Zombie, _Mob);
@@ -1815,22 +1899,34 @@ var Zombie = function (_Mob) {
     function Zombie(data) {
         _classCallCheck(this, Zombie);
 
-        var _this = _possibleConstructorReturn(this, (Zombie.__proto__ || Object.getPrototypeOf(Zombie)).call(this, data));
+        var _this = _possibleConstructorReturn(this, (Zombie.__proto__ || Object.getPrototypeOf(Zombie)).call(this, Object.assign({}, data, {
+            health: data.health || 5
+        })));
 
         _this[_data] = _helpers2.default.mask(SCHEMA, data);
         _this.targetEntity = null;
         _this.targetTimer = 0;
+
+        _this.collidingEntity = null;
+        _this.attackTimer = 0;
         return _this;
     }
 
     _createClass(Zombie, [{
         key: 'onCollision',
         value: function onCollision(entity, pair) {
-            // if (entity && entity) {
-            //     Matter.Pair.setActive(pair, false);
-            // } else {
-            //     this.deleted = true;
-            // }
+            if (_physics2.default.isClient === false) {
+                if (entity && entity instanceof _Player2.default) {
+                    this.collidingEntity = entity;
+                }
+            }
+        }
+    }, {
+        key: 'onCollisionEnd',
+        value: function onCollisionEnd(entity, pair) {
+            if (_physics2.default.isClient === false && this.collidingEntity && entity && this.collidingEntity.id === entity.id) {
+                this.collidingEntity = null;
+            }
         }
     }, {
         key: 'update',
@@ -1865,6 +1961,13 @@ var Zombie = function (_Mob) {
                 }
                 if (closest) this.targetEntity = closest;
             } else this.targetTimer -= core.getUpdateDelta();
+
+            if (this.attackTimer <= 0) {
+                if (this.collidingEntity) {
+                    this.collidingEntity.health = this.collidingEntity.health - 1;
+                    this.attackTimer = ATTACK_DELAY;
+                }
+            } else this.attackTimer -= core.getUpdateDelta();
 
             return needsUpdate;
         }
@@ -1935,7 +2038,7 @@ var SCHEMA = {
     type: ENTITIES.BARREL
 };
 
-var EXPLOSION_RADIUS = 9;
+var EXPLOSION_RADIUS = 15;
 
 var Barrel = function (_Mob) {
     _inherits(Barrel, _Mob);
@@ -1956,8 +2059,7 @@ var Barrel = function (_Mob) {
 
         _this[_data] = _helpers2.default.mask(SCHEMA, data);
 
-        _this.body.frictionAir = 0.7;
-        _this.body.frictionStatic = 0.7;
+        _matterJs2.default.Body.setStatic(_this.body, true);
         return _this;
     }
 
@@ -1968,7 +2070,7 @@ var Barrel = function (_Mob) {
             var es = core.entity.getInRect(this.x - EXPLOSION_RADIUS, this.y - EXPLOSION_RADIUS, this.x + EXPLOSION_RADIUS, this.y + EXPLOSION_RADIUS);
             for (var i = 0; i < es.length; i++) {
                 if (es[i] instanceof _Mob3.default && es[i].distanceFrom(this.x, this.y) <= EXPLOSION_RADIUS) {
-                    es[i].health = es[i].health - 1;
+                    es[i].health = es[i].health - 3;
                 }
             }
         }
@@ -1996,6 +2098,107 @@ var Barrel = function (_Mob) {
 }(_Mob3.default);
 
 exports.default = Barrel;
+;
+
+/***/ }),
+/* 17 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _helpers = __webpack_require__(2);
+
+var _helpers2 = _interopRequireDefault(_helpers);
+
+var _Entity2 = __webpack_require__(6);
+
+var _Entity3 = _interopRequireDefault(_Entity2);
+
+var _common = __webpack_require__(0);
+
+var _common2 = _interopRequireDefault(_common);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var ENTITIES = _common2.default.ENTITIES,
+    ITEMS = _common2.default.ITEMS;
+
+
+var _data = Symbol('data');
+var SCHEMA = {
+    _protect: ['type'],
+    type: ENTITIES.FLOATING_ITEM,
+    item: ITEMS.TEST
+};
+
+var FloatingItem = function (_Entity) {
+    _inherits(FloatingItem, _Entity);
+
+    _createClass(FloatingItem, [{
+        key: 'type',
+        get: function get() {
+            return this[_data].type;
+        }
+    }, {
+        key: 'item',
+        get: function get() {
+            return this[_data].item;
+        },
+        set: function set(item) {
+            if (this[_data].item !== item) {
+                this.needsUpdate = true;this[_data].item = item;
+            }
+        }
+    }]);
+
+    function FloatingItem(data) {
+        _classCallCheck(this, FloatingItem);
+
+        var _this = _possibleConstructorReturn(this, (FloatingItem.__proto__ || Object.getPrototypeOf(FloatingItem)).call(this, data));
+
+        _this[_data] = _helpers2.default.mask(SCHEMA, data);
+        return _this;
+    }
+
+    _createClass(FloatingItem, [{
+        key: 'update',
+        value: function update(core) {
+            var needsUpdate = _get(FloatingItem.prototype.__proto__ || Object.getPrototypeOf(FloatingItem.prototype), 'update', this).call(this, core);
+
+            return needsUpdate;
+        }
+    }, {
+        key: 'toData',
+        value: function toData() {
+            return Object.assign({}, _get(FloatingItem.prototype.__proto__ || Object.getPrototypeOf(FloatingItem.prototype), 'toData', this).call(this), _helpers2.default.mask(SCHEMA, this[_data], true));
+        }
+    }, {
+        key: 'dataUpdate',
+        value: function dataUpdate(data, now) {
+            _get(FloatingItem.prototype.__proto__ || Object.getPrototypeOf(FloatingItem.prototype), 'dataUpdate', this).call(this, data, now);
+            this[_data] = _helpers2.default.mask(this[_data], data);
+        }
+    }]);
+
+    return FloatingItem;
+}(_Entity3.default);
+
+exports.default = FloatingItem;
 ;
 
 /***/ })

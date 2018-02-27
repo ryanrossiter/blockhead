@@ -81,6 +81,10 @@ export default class PhysicsEntity extends Entity {
 
     }
 
+    onCollisionEnd(entity, pair, body) {
+    
+    }
+
     toData() {
         return Object.assign({},
             super.toData(),
@@ -91,6 +95,12 @@ export default class PhysicsEntity extends Entity {
     dataUpdate(data, now) {
         super.dataUpdate(data);
         this[_data] = Helpers.mask(this[_data], data);
+
+        if (this.body.position.x === NaN || this.body.position.y === NaN) {
+            console.warn("Body position is NaN, resetting to position...");
+            this.body.position.x = this.x;
+            this.body.position.y = this.y;
+        }
 
         var delay = 0;
         var xVelCorr = 0;

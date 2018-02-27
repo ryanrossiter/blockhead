@@ -5,6 +5,7 @@ import COMMON from '../common';
 let { ENTITIES } = COMMON;
 
 import Matter from 'matter-js';
+import Physics from '../physics';
 
 const _data = Symbol('data');
 const SCHEMA = {
@@ -14,24 +15,36 @@ const SCHEMA = {
 
 const ACCELERATION = 0.03;
 const TARGET_DELAY = 500;
+const ATTACK_DELAY = 1000;
 
 export default class Zombie extends Mob {
     get type() { return this[_data].type }
 
     constructor(data) {
-        super(data);
+        super(Object.assign({}, data, {
+            health: data.health || 5,
+        }));
 
         this[_data] = Helpers.mask(SCHEMA, data);
         this.targetEntity = null;
         this.targetTimer = 0;
+
+        this.collidingEntity = null;
+        this.attackTimer = 0;
     };
 
     onCollision(entity, pair) {
-        // if (entity && entity) {
-        //     Matter.Pair.setActive(pair, false);
-        // } else {
-        //     this.deleted = true;
-        // }
+        if (Physics.isClient === false) {
+            if (entity && entity instanceof Player) {
+                this.collidingEntity = entity;
+            }
+        }
+    }
+
+    onCollisionEnd(entity, pair) {
+        if (Physics.isClient === false && this.collidingEntity && entity && this.collidingEntity.id === entity.id) {
+            this.collidingEntity = null;
+        }
     }
 
     update(core) {
@@ -65,6 +78,13 @@ export default class Zombie extends Mob {
             }
             if (closest) this.targetEntity = closest;
         } else this.targetTimer -= core.getUpdateDelta();
+
+        if (this.attackTimer <= 0) {
+            if (this.collidingEntity) {
+                this.collidingEntity.health = this.collidingEntity.health - 1;
+                this.attackTimer = ATTACK_DELAY;
+            }
+        } else this.attackTimer -= core.getUpdateDelta();
 
         return needsUpdate;
     }
