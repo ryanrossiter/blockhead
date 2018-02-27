@@ -1,7 +1,7 @@
 import COMMON from '../common/common';
 let { ITEMS } = COMMON;
 
-import * as THREE from 'three';
+//import * as THREE from 'three';
 
 let handgunGeom = new THREE.BoxGeometry(2, 0.8, 0.8);
 let handleGeom = new THREE.BoxGeometry(0.5, 0.5, 1.5);

@@ -2,7 +2,7 @@ import Core from '../core';
 import FloatingItem from '../common/entities/FloatingItem';
 import ItemModels from '../models/ItemModels';
 
-import * as THREE from 'three';
+//import * as THREE from 'three';
 
 // const barrelGeom = new THREE.CylinderGeometry( 1.5, 1.5, 3 );
 // const material = new THREE.MeshToonMaterial( {

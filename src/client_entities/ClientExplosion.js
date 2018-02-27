@@ -1,7 +1,7 @@
 import Core from '../core';
 import Entity from '../common/entities/Entity';
 
-import * as THREE from 'three';
+//import * as THREE from 'three';
 
 const EXPLOSION_RADIUS = 14;
 const EXPLOSION_DURATION = 200;

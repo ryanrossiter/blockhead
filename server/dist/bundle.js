@@ -933,7 +933,7 @@ var Player = function (_Mob) {
             return this[_data].selected;
         },
         set: function set(s) {
-            if (s < INVENTORY_SIZE) {
+            if (s >= 0 && s < INVENTORY_SIZE) {
                 this.needsUpdate = true;this[_data].selected = s;
             }
         }
@@ -1631,8 +1631,8 @@ Test1.entityQueue.push({ entity: _ZombieSpawner2.default, data: { x: -35, y: 0 }
 
 Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: 5, y: 5, item: { type: ITEMS.HANDGUN, ammo: 10 } } });
 Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: -5, y: 5, item: { type: ITEMS.HANDGUN, ammo: 10 } } });
-Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: -5, y: -5, item: { type: ITEMS.RIFLE, ammo: 25 } } });
-Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: 5, y: -5, item: { type: ITEMS.RIFLE, ammo: 25 } } });
+Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: -5, y: -5, item: { type: ITEMS.RIFLE, ammo: 100 } } });
+Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: 5, y: -5, item: { type: ITEMS.RIFLE, ammo: 100 } } });
 
 exports.default = Test1;
 

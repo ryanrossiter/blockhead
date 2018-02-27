@@ -1,7 +1,7 @@
 import Core from '../core';
 import Projectile from '../common/entities/Projectile';
 
-import * as THREE from 'three';
+//import * as THREE from 'three';
 
 // basic monochromatic energy preservation
 // const alpha = 0.8;

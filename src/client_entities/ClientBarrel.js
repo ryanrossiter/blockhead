@@ -2,7 +2,7 @@ import Core from '../core';
 import Barrel from '../common/entities/Barrel';
 import ClientExplosion from './ClientExplosion';
 
-import * as THREE from 'three';
+//import * as THREE from 'three';
 
 const barrelGeom = new THREE.CylinderGeometry( 1.5, 1.5, 3 );
 const material = new THREE.MeshToonMaterial( {

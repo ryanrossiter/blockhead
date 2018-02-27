@@ -19,6 +19,7 @@
     "babel-plugin-transform-es2015-parameters": "^6.24.1",
     "babel-preset-env": "^1.6.1",
     "connect": "^3.6.5",
+    "expose-loader": "^0.7.4",
     "serve-static": "^1.13.2",
     "webpack": "^3.11.0",
     "webpack-dev-server": "^2.11.1"

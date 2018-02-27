@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import Physics from './common/physics';
 import EntityFactory from './EntityFactory';
 import io from 'socket.io-client';
@@ -48,7 +47,6 @@ const Core = {
     },
 
     init: function(canvasId) {
-
         this.scene = new THREE.Scene();
         this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
 
@@ -77,9 +75,9 @@ const Core = {
 
         var planeGeometry = new THREE.BoxGeometry( 100, 100 );
         var planeMaterial = new THREE.MeshLambertMaterial( { color: 0xffffff } );
-        var plane = new THREE.Mesh( planeGeometry, planeMaterial );
-        plane.position.z = -0.5;
-        this.scene.add( plane );
+        this.plane = new THREE.Mesh( planeGeometry, planeMaterial );
+        this.plane.position.z = -0.5;
+        this.scene.add( this.plane );
 
         SceneBuilder.Build(this.scene, Test1);
         WorldBuilder.Build(Physics.engine.world, Test1);

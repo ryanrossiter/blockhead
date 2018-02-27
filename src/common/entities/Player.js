@@ -41,7 +41,7 @@ export default class Player extends Mob {
     set right(r) { if (this[_data].right !== r) { this.needsUpdate = true; this[_data].right = r; this._right(); }}
     get inventory() { return this[_data].inventory; }
     get selected() { return this[_data].selected; }
-    set selected(s) { if (s < INVENTORY_SIZE) { this.needsUpdate = true; this[_data].selected = s; }}
+    set selected(s) { if (s >= 0 && s < INVENTORY_SIZE) { this.needsUpdate = true; this[_data].selected = s; }}
 
     constructor(data) {
         super(data);

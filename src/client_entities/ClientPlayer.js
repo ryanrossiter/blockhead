@@ -3,7 +3,7 @@ import Player from '../common/entities/Player';
 import COMMON from '../common/common';
 let { KEYS, ITEMS } = COMMON;
 
-import * as THREE from 'three';
+//import * as THREE from 'three';
 import ItemModels from '../models/ItemModels';
 
 // basic monochromatic energy preservation
