@@ -4,7 +4,15 @@ import Projectile from './Projectile';
 import FloatingItem from './FloatingItem';
 import COMMON from '../common';
 import Matter from 'matter-js';
-let { ENTITIES } = COMMON;
+let { ENTITIES, ITEMS } = COMMON;
+
+const ACCELERATION = 0.1;
+const GUN_DATA = {};
+GUN_DATA[ITEMS.HANDGUN] = { delay: 600 };
+GUN_DATA[ITEMS.RIFLE] = { delay: 200 };
+const PROJECTILE_SPEED = 3;
+const INTERACT_RADIUS = 8;
+const INVENTORY_SIZE = 4;
 
 const _data = Symbol('data');
 const SCHEMA = {
@@ -15,12 +23,9 @@ const SCHEMA = {
     left: false,
     right: false,
     shoot: false,
+    inventory: undefined,
+    selected: 0, // selected inventory item
 };
-
-const ACCELERATION = 0.1;
-const SHOOT_DELAY = 100;
-const PROJECTILE_SPEED = 3;
-const INTERACT_RADIUS = 8;
 
 export default class Player extends Mob {
     get type() { return this[_data].type }
@@ -34,14 +39,40 @@ export default class Player extends Mob {
     set left(l) { if (this[_data].left !== l) { this.needsUpdate = true; this[_data].left = l; this._left(); }}
     get right() { return this[_data].right; }
     set right(r) { if (this[_data].right !== r) { this.needsUpdate = true; this[_data].right = r; this._right(); }}
+    get inventory() { return this[_data].inventory; }
+    get selected() { return this[_data].selected; }
+    set selected(s) { if (s < INVENTORY_SIZE) { this.needsUpdate = true; this[_data].selected = s; }}
 
     constructor(data) {
         super(data);
 
-        this[_data] = Helpers.mask(SCHEMA, data);
+        this[_data] = Helpers.mask(SCHEMA, Object.assign({}, {
+            inventory: data.inventory || Array.apply(null, Array(INVENTORY_SIZE)).map(() => null)
+        }, data));
 
         this.shootTimer = 0;
     };
+
+    addToInventory(item) {
+        let nullInd = -1;
+        for (var i = 0; i < INVENTORY_SIZE; i++) {
+            if (this.inventory[i] === null) {
+                if (nullInd === -1) nullInd = i;
+            } else if (this.inventory[i].type === item.type) {
+                this.inventory[i].ammo += item.ammo;
+                this.needsUpdate = true;
+                return true;
+            }
+        }
+
+        if (nullInd !== -1) {
+            this.inventory[nullInd] = item;
+            this.needsUpdate = true;
+            return true;
+        }
+
+        return false;
+    }
 
     interact(core) {
         // interact with closest entity in INTERACT_RADIUS
@@ -57,7 +88,9 @@ export default class Player extends Mob {
         }
 
         if (e) {
-            e.deleted = true;
+            if (this.addToInventory(e.item)) {
+                e.deleted = true;
+            }
         }
     }
 
@@ -66,9 +99,12 @@ export default class Player extends Mob {
 
         if (this.shootTimer > 0) this.shootTimer -= core.getUpdateDelta();
 
-        if (this[_data].shoot === true && this.shootTimer <= 0) {
+        if (this[_data].shoot === true && this.inventory[this.selected] !== null
+            && this.inventory[this.selected].ammo > 0 && this.shootTimer <= 0) {
             this._shoot(core);
-            this.shootTimer = SHOOT_DELAY;
+            this.shootTimer = GUN_DATA[this.inventory[this.selected].type].delay;
+            this.inventory[this.selected].ammo--;
+            this.needsUpdate = true;
         }
 
         if (this[_data].forward === true) {

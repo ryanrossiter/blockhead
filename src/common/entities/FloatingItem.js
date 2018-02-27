@@ -7,7 +7,10 @@ const _data = Symbol('data');
 const SCHEMA = {
     _protect: ['type'],
     type: ENTITIES.FLOATING_ITEM,
-    item: ITEMS.TEST
+    item: {
+        type: ITEMS.HANDGUN,
+        ammo: 10,
+    }
 };
 
 export default class FloatingItem extends Entity {

@@ -1,10 +1,10 @@
 import Core from '../core';
 import Player from '../common/entities/Player';
 import COMMON from '../common/common';
-let { KEYS } = COMMON;
+let { KEYS, ITEMS } = COMMON;
 
 import * as THREE from 'three';
-import GunModels from '../models/GunModels';
+import ItemModels from '../models/ItemModels';
 
 // basic monochromatic energy preservation
 const alpha = 0.8;
@@ -25,7 +25,6 @@ const material = new THREE.MeshToonMaterial( {
 const outlineMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, side: THREE.BackSide } );
 
 const gunMat = new THREE.MeshBasicMaterial( { color: 0x333333 } );
-const gunGeom = new THREE.BoxGeometry( 2, 1, 1 );
 
 let canvas = document.createElement("canvas");
 canvas.width = 32;
@@ -45,6 +44,9 @@ export default class ClientPlayer extends Player {
     get angleFacing() { return super.angleFacing; };
     set angleFacing(angle) { if (this.angleFacing !== angle) { super.angleFacing = angle; Core.socket.emit("move.angleFacing", { angle }); }};
 
+    get selected() { return super.selected; };
+    set selected(selected) { if (this.selected !== selected) { super.selected = selected; Core.socket.emit("move.selected", { selected }); this.updateGunGeometry() }};
+
     constructor(data) {
         super(data);
 
@@ -56,15 +58,16 @@ export default class ClientPlayer extends Player {
         outline.position.z = 2.5;
         outline.scale.multiplyScalar(1.05)
         
-        let gun = GunModels.handgunMesh;
-        gun.position.z = 3;
-        gun.position.x = 3;
-        gun.position.y = -1;
+        this.gun = new THREE.Mesh(ItemModels[ITEMS.HANDGUN].geom, gunMat);
+        this.gun.position.z = 3;
+        this.gun.position.x = 3;
+        this.gun.position.y = -1;
+        this.updateGunGeometry();
 
         this.group = new THREE.Group();
         this.group.add(cube);
         this.group.add(outline);
-        this.group.add(gun);
+        this.group.add(this.gun);
         this.group.position.x = this.x;
         this.group.position.y = this.y;
         this.group.position.z = 0.25
@@ -91,12 +94,26 @@ export default class ClientPlayer extends Player {
             this.hpSpriteMaterial.map = generateHealthBarTexture(data.health, 10);
         }
 
+        let gunGeomNeedsUpdate = this.inventory[this.selected] === null && data.inventory[this.selected] !== null;
+        gunGeomNeedsUpdate |= data.id !== Core.playerId && data.selected !== this.selected; // update for selected item for other players
+
         super.dataUpdate(data, now);
+
+        if (gunGeomNeedsUpdate) this.updateGunGeometry();
     }
 
     onDelete() {
         super.onDelete();
         Core.scene.remove(this.group);
+    }
+
+    updateGunGeometry() {
+        if (this.inventory[this.selected] !== null) {
+            this.gun.visible = true;
+            this.gun.geometry = ItemModels[this.inventory[this.selected].type].geom;
+        } else {
+            this.gun.visible = false;
+        }
     }
 
     geometryUpdate() {
@@ -123,6 +140,16 @@ export default class ClientPlayer extends Player {
                 this.wasInteractPressed = true;
             } else if (this.wasInteractPressed && !Core.keys[KEYS.E]) {
                 this.wasInteractPressed = false;
+            }
+
+            if (Core.keys[KEYS.ONE]) {
+                this.selected = 0;
+            } else if (Core.keys[KEYS.TWO]) {
+                this.selected = 1;
+            } else if (Core.keys[KEYS.THREE]) {
+                this.selected = 2;
+            } else if (Core.keys[KEYS.FOUR]) {
+                this.selected = 3;
             }
 
             if (Core.mouseButtons[1]) {

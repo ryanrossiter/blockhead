@@ -23,6 +23,7 @@ var MAX_NAME_LENGTH = 60;
 const PORT = 8000;
 
 const PHYSICS_STEP_TIME = 1000 / 60; // 60 ticks
+const MAX_ENTITIES = 100;
 
 const Core = {
     isClient: false,
@@ -117,6 +118,7 @@ const Core = {
         client.on("disconnect", this.event.onClientDisconnect);
 
         client.on("move.interact", this.event.move.interact);
+        client.on("move.selected", this.event.move.selected);
         client.on("move.shoot", this.event.move.shoot);
         client.on("move.shoot.stop", this.event.move.shoot.stop);
         client.on("move.forward", this.event.move.forward);
@@ -142,6 +144,11 @@ const Core = {
     entity: {
         // Used locally
         create: function(klass, data) {
+            if (Object.keys(Core.entities).length >= MAX_ENTITIES && klass !== Player) {
+                //console.log("Can't create entity: max entities reached.");
+                return;
+            }
+
             if (!data.id) {
                 var id = Helpers.createId();
                 while (Core.entities.hasOwnProperty(id)) id = Helpers.createId(); // ensure uniqueness
@@ -300,6 +307,12 @@ const Core = {
             interact: function() {
                 if (Core.entities.hasOwnProperty(this.id)) {
                     Core.entities[this.id].interact(Core);
+                }
+            },
+
+            selected: function({ selected }) {
+                if (Core.entities.hasOwnProperty(this.id)) {
+                    Core.entities[this.id].selected = selected;
                 }
             },
 

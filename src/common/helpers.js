@@ -42,7 +42,7 @@ export default {
         }
 
         for (var property in source2) {
-            if (source1.hasOwnProperty(property) && _protect.indexOf(property) === -1 && property != "_protect") { // Changed from extend here (2 => 1)
+            if (source1.hasOwnProperty(property) && source2.hasOwnProperty(property) && _protect.indexOf(property) === -1 && property != "_protect") { // Changed from extend here (2 => 1)
                 destination[property] = source2[property];
             }
         }

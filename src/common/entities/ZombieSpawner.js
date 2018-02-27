@@ -4,7 +4,7 @@ import Zombie from './Zombie';
 import COMMON from '../common';
 let { ENTITIES } = COMMON;
 
-const SPAWN_DELAY = 5000;
+const SPAWN_DELAY = 10000;
 
 export default class ZombieSpawner extends Entity {
     constructor(data) {

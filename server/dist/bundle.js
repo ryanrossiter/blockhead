@@ -85,7 +85,8 @@ var ENTITIES = {
 };
 
 var ITEMS = {
-	TEST: 0
+	HANDGUN: 0,
+	RIFLE: 1
 };
 
 var COLORS = {
@@ -114,7 +115,11 @@ var KEYS = {
 	D: 68,
 	W: 87,
 	SPACE: 32,
-	E: 69
+	E: 69,
+	ONE: 49,
+	TWO: 50,
+	THREE: 51,
+	FOUR: 52
 };
 
 var DEFAULT_FONT = "14px Arial Black";
@@ -182,7 +187,7 @@ exports.default = {
         }
 
         for (var property in source2) {
-            if (source1.hasOwnProperty(property) && _protect.indexOf(property) === -1 && property != "_protect") {
+            if (source1.hasOwnProperty(property) && source2.hasOwnProperty(property) && _protect.indexOf(property) === -1 && property != "_protect") {
                 // Changed from extend here (2 => 1)
                 destination[property] = source2[property];
             }
@@ -834,8 +839,17 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var ENTITIES = _common2.default.ENTITIES;
+var ENTITIES = _common2.default.ENTITIES,
+    ITEMS = _common2.default.ITEMS;
 
+
+var ACCELERATION = 0.1;
+var GUN_DATA = {};
+GUN_DATA[ITEMS.HANDGUN] = { delay: 600 };
+GUN_DATA[ITEMS.RIFLE] = { delay: 200 };
+var PROJECTILE_SPEED = 3;
+var INTERACT_RADIUS = 8;
+var INVENTORY_SIZE = 4;
 
 var _data = Symbol('data');
 var SCHEMA = {
@@ -845,13 +859,10 @@ var SCHEMA = {
     backward: false,
     left: false,
     right: false,
-    shoot: false
+    shoot: false,
+    inventory: undefined,
+    selected: 0 // selected inventory item
 };
-
-var ACCELERATION = 0.1;
-var SHOOT_DELAY = 100;
-var PROJECTILE_SPEED = 3;
-var INTERACT_RADIUS = 8;
 
 var Player = function (_Mob) {
     _inherits(Player, _Mob);
@@ -911,6 +922,21 @@ var Player = function (_Mob) {
                 this.needsUpdate = true;this[_data].right = r;this._right();
             }
         }
+    }, {
+        key: 'inventory',
+        get: function get() {
+            return this[_data].inventory;
+        }
+    }, {
+        key: 'selected',
+        get: function get() {
+            return this[_data].selected;
+        },
+        set: function set(s) {
+            if (s < INVENTORY_SIZE) {
+                this.needsUpdate = true;this[_data].selected = s;
+            }
+        }
     }]);
 
     function Player(data) {
@@ -918,13 +944,39 @@ var Player = function (_Mob) {
 
         var _this = _possibleConstructorReturn(this, (Player.__proto__ || Object.getPrototypeOf(Player)).call(this, data));
 
-        _this[_data] = _helpers2.default.mask(SCHEMA, data);
+        _this[_data] = _helpers2.default.mask(SCHEMA, Object.assign({}, {
+            inventory: data.inventory || Array.apply(null, Array(INVENTORY_SIZE)).map(function () {
+                return null;
+            })
+        }, data));
 
         _this.shootTimer = 0;
         return _this;
     }
 
     _createClass(Player, [{
+        key: 'addToInventory',
+        value: function addToInventory(item) {
+            var nullInd = -1;
+            for (var i = 0; i < INVENTORY_SIZE; i++) {
+                if (this.inventory[i] === null) {
+                    if (nullInd === -1) nullInd = i;
+                } else if (this.inventory[i].type === item.type) {
+                    this.inventory[i].ammo += item.ammo;
+                    this.needsUpdate = true;
+                    return true;
+                }
+            }
+
+            if (nullInd !== -1) {
+                this.inventory[nullInd] = item;
+                this.needsUpdate = true;
+                return true;
+            }
+
+            return false;
+        }
+    }, {
         key: 'interact',
         value: function interact(core) {
             // interact with closest entity in INTERACT_RADIUS
@@ -940,7 +992,9 @@ var Player = function (_Mob) {
             }
 
             if (e) {
-                e.deleted = true;
+                if (this.addToInventory(e.item)) {
+                    e.deleted = true;
+                }
             }
         }
     }, {
@@ -950,9 +1004,11 @@ var Player = function (_Mob) {
 
             if (this.shootTimer > 0) this.shootTimer -= core.getUpdateDelta();
 
-            if (this[_data].shoot === true && this.shootTimer <= 0) {
+            if (this[_data].shoot === true && this.inventory[this.selected] !== null && this.inventory[this.selected].ammo > 0 && this.shootTimer <= 0) {
                 this._shoot(core);
-                this.shootTimer = SHOOT_DELAY;
+                this.shootTimer = GUN_DATA[this.inventory[this.selected].type].delay;
+                this.inventory[this.selected].ammo--;
+                this.needsUpdate = true;
             }
 
             if (this[_data].forward === true) {
@@ -1104,6 +1160,7 @@ var MAX_NAME_LENGTH = 60;
 const PORT = 8000;
 
 const PHYSICS_STEP_TIME = 1000 / 60; // 60 ticks
+const MAX_ENTITIES = 100;
 
 const Core = {
     isClient: false,
@@ -1199,6 +1256,7 @@ const Core = {
         client.on("disconnect", this.event.onClientDisconnect);
 
         client.on("move.interact", this.event.move.interact);
+        client.on("move.selected", this.event.move.selected);
         client.on("move.shoot", this.event.move.shoot);
         client.on("move.shoot.stop", this.event.move.shoot.stop);
         client.on("move.forward", this.event.move.forward);
@@ -1224,6 +1282,11 @@ const Core = {
     entity: {
         // Used locally
         create: function (klass, data) {
+            if (Object.keys(Core.entities).length >= MAX_ENTITIES && klass !== _Player2.default) {
+                //console.log("Can't create entity: max entities reached.");
+                return;
+            }
+
             if (!data.id) {
                 var id = _helpers2.default.createId();
                 while (Core.entities.hasOwnProperty(id)) id = _helpers2.default.createId(); // ensure uniqueness
@@ -1380,6 +1443,14 @@ const Core = {
                 }
             },
 
+            selected: function (_ref) {
+                let { selected } = _ref;
+
+                if (Core.entities.hasOwnProperty(this.id)) {
+                    Core.entities[this.id].selected = selected;
+                }
+            },
+
             shoot: new function () {
                 var shoot = function () {
                     if (Core.entities.hasOwnProperty(this.id)) {
@@ -1459,8 +1530,8 @@ const Core = {
 
                 return right;
             }(),
-            angleFacing: function (_ref) {
-                let { angle } = _ref;
+            angleFacing: function (_ref2) {
+                let { angle } = _ref2;
 
                 if (Core.entities.hasOwnProperty(this.id)) {
                     Core.entities[this.id].angleFacing = angle;
@@ -1558,7 +1629,10 @@ Test1.entityQueue.push({ entity: _ZombieSpawner2.default, data: { x: 0, y: -35 }
 Test1.entityQueue.push({ entity: _ZombieSpawner2.default, data: { x: 35, y: 0 } });
 Test1.entityQueue.push({ entity: _ZombieSpawner2.default, data: { x: -35, y: 0 } });
 
-Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: 5, y: 5, item: ITEMS.TEST } });
+Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: 5, y: 5, item: { type: ITEMS.HANDGUN, ammo: 10 } } });
+Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: -5, y: 5, item: { type: ITEMS.HANDGUN, ammo: 10 } } });
+Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: -5, y: -5, item: { type: ITEMS.RIFLE, ammo: 25 } } });
+Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: 5, y: -5, item: { type: ITEMS.RIFLE, ammo: 25 } } });
 
 exports.default = Test1;
 
@@ -1795,7 +1869,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var ENTITIES = _common2.default.ENTITIES;
 
 
-var SPAWN_DELAY = 5000;
+var SPAWN_DELAY = 10000;
 
 var ZombieSpawner = function (_Entity) {
     _inherits(ZombieSpawner, _Entity);
@@ -2156,7 +2230,10 @@ var _data = Symbol('data');
 var SCHEMA = {
     _protect: ['type'],
     type: ENTITIES.FLOATING_ITEM,
-    item: ITEMS.TEST
+    item: {
+        type: ITEMS.HANDGUN,
+        ammo: 10
+    }
 };
 
 var FloatingItem = function (_Entity) {

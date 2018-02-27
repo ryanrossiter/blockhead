@@ -9,6 +9,8 @@ import SceneBuilder from './SceneBuilder';
 import Matter from 'matter-js';
 import Stats from 'stats.js';
 
+import UI from './UI';
+
 const UPDATE_INTERVAL = 1000 / 15;
 const PHYSICS_STEP_TIME = 1000 / 60; // 60 ticks
 
@@ -58,6 +60,8 @@ const Core = {
         this.stats = new Stats();
         this.stats.showPanel(0); // fps counter
         document.body.appendChild(this.stats.dom);
+
+        document.body.appendChild(UI.domElement);
 
         this.camera.position.y = -17;
         this.camera.position.z = 40;
@@ -132,6 +136,8 @@ const Core = {
             }
         }
         this.renderer.render(this.scene, this.camera);
+
+        UI.update();
         this.stats.end();
         
         this.lastFrameTime = Date.now();

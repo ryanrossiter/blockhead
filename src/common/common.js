@@ -10,7 +10,8 @@ var ENTITIES = {
 };
 
 var ITEMS = {
-	TEST: 0
+	HANDGUN: 0,
+	RIFLE: 1,
 }
 
 var COLORS = {
@@ -40,6 +41,10 @@ var KEYS = {
 	W: 		87,
 	SPACE:  32,
 	E:      69,
+	ONE:    49,
+	TWO:    50,
+	THREE:  51,
+	FOUR:   52,
 };
 
 var DEFAULT_FONT = "14px Arial Black";

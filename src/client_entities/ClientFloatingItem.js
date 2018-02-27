@@ -1,6 +1,6 @@
 import Core from '../core';
 import FloatingItem from '../common/entities/FloatingItem';
-import GunModels from '../models/GunModels';
+import ItemModels from '../models/ItemModels';
 
 import * as THREE from 'three';
 
@@ -19,6 +19,8 @@ import * as THREE from 'three';
 // const outlineMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, side: THREE.BackSide } );
 
 const INTERACT_RADIUS = 8; // also defined in player
+
+const defaultMat = new THREE.MeshBasicMaterial( { color: 0x333333 } );
 
 let canvas = document.createElement('canvas');
 canvas.width = canvas.height = 64;
@@ -44,7 +46,7 @@ export default class ClientFloatingItem extends FloatingItem {
         this.eSprite.position.z = 4;
         this.eSprite.scale.multiplyScalar(1.5);
         this.group = new THREE.Group;
-        this.group.add(GunModels.handgunMesh);
+        this.group.add(new THREE.Mesh(ItemModels[this.item.type].geom, ItemModels[this.item.type].mat || defaultMat));
         this.group.add(this.eSprite);
         this.group.position.x = this.x;
         this.group.position.y = this.y;
