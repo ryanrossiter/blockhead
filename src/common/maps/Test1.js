@@ -21,6 +21,11 @@ Helpers.GenerateWall(Test1, 10, 0, 2, 10);
 Helpers.GenerateWall(Test1, 0, -10, 10, 2);
 Helpers.GenerateWall(Test1, -10, 0, 2, 10);
 
+Helpers.GenerateWall(Test1, 30, 30, 5, 5);
+Helpers.GenerateWall(Test1, 30, -30, 5, 5);
+Helpers.GenerateWall(Test1, -30, 30, 5, 5);
+Helpers.GenerateWall(Test1, -30, -30, 5, 5);
+
 Test1.entityQueue.push({ entity: Barrel, data: { x: 20, y: 20 } });
 Test1.entityQueue.push({ entity: Barrel, data: { x: 20, y: -20 } });
 Test1.entityQueue.push({ entity: Barrel, data: { x: -20, y: 20 } });

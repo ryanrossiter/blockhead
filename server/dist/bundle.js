@@ -489,6 +489,7 @@ var PhysicsEntity = function (_Entity) {
             lastUpdate: Date.now()
         }, data));
 
+        _this.inWorld = false;
         _this.setBody(_this.createBody());
         return _this;
     }
@@ -559,32 +560,38 @@ var PhysicsEntity = function (_Entity) {
             _get(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'dataUpdate', this).call(this, data);
             this[_data] = _helpers2.default.mask(this[_data], data);
 
-            if (this.body.position.x === NaN || this.body.position.y === NaN) {
-                console.warn("Body position is NaN, resetting to position...");
-                this.body.position.x = this.x;
-                this.body.position.y = this.y;
+            if (this.deleted === false) {
+                if (this.body.position.x === NaN || this.body.position.y === NaN) {
+                    console.warn("Body position is NaN, resetting to position...");
+                    this.body.position.x = this.x;
+                    this.body.position.y = this.y;
+                }
+
+                var delay = 0;
+                var xVelCorr = 0;
+                var yVelCorr = 0;
+                var angleVelCorr = 0;
+                if (this.lastBodyUpdate !== null) {
+                    delay = now - this[_data].lastUpdate;
+                    var delta = Date.now() + delay - this.lastBodyUpdate;
+
+                    xVelCorr = (_get(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'x', this) - this.body.position.x) / (delta / (1000 / 60));
+                    yVelCorr = (_get(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'y', this) - this.body.position.y) / (delta / (1000 / 60));
+                    angleVelCorr = (this[_data].angle - this.body.angle) / (delta / (1000 / 60));
+                }
+
+                this.lastBodyUpdate = Date.now() + delay;
+                //console.log(`${this.body.velocity.x} ${this[_data].xVelocity} ${this.body.position.x} ${super.x} ${xVelCorr}`);
+                //console.log("aa", xVelCorr);
+                _matterJs2.default.Body.setVelocity(this.body, { x: this[_data].xVelocity + xVelCorr, y: this[_data].yVelocity + yVelCorr });
+                _matterJs2.default.Body.setAngularVelocity(this.body, this[_data].angularVelocity + angleVelCorr);
+                //Matter.Body.setPosition(this.body, { x: super.x, y: super.y });
+                //Matter.Body.setAngle(this.body, this[_data].angle);
+            } else if (this.inWorld === true) {
+                // remove from world
+                _matterJs2.default.World.remove(_physics2.default.engine.world, this.body);
+                this.inWorld = false;
             }
-
-            var delay = 0;
-            var xVelCorr = 0;
-            var yVelCorr = 0;
-            var angleVelCorr = 0;
-            if (this.lastBodyUpdate !== null) {
-                delay = now - this[_data].lastUpdate;
-                var delta = Date.now() + delay - this.lastBodyUpdate;
-
-                xVelCorr = (_get(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'x', this) - this.body.position.x) / (delta / (1000 / 60));
-                yVelCorr = (_get(PhysicsEntity.prototype.__proto__ || Object.getPrototypeOf(PhysicsEntity.prototype), 'y', this) - this.body.position.y) / (delta / (1000 / 60));
-                angleVelCorr = (this[_data].angle - this.body.angle) / (delta / (1000 / 60));
-            }
-
-            this.lastBodyUpdate = Date.now() + delay;
-            //console.log(`${this.body.velocity.x} ${this[_data].xVelocity} ${this.body.position.x} ${super.x} ${xVelCorr}`);
-            //console.log("aa", xVelCorr);
-            _matterJs2.default.Body.setVelocity(this.body, { x: this[_data].xVelocity + xVelCorr, y: this[_data].yVelocity + yVelCorr });
-            _matterJs2.default.Body.setAngularVelocity(this.body, this[_data].angularVelocity + angleVelCorr);
-            //Matter.Body.setPosition(this.body, { x: super.x, y: super.y });
-            //Matter.Body.setAngle(this.body, this[_data].angle);
         }
     }, {
         key: 'setBody',
@@ -599,6 +606,7 @@ var PhysicsEntity = function (_Entity) {
             this.body = body;
             this.body.entityId = this.id;
             this.lastBodyUpdate = Date.now();
+            this.inWorld = true;
             _matterJs2.default.World.add(_physics2.default.engine.world, this.body);
         }
     }, {
@@ -842,7 +850,7 @@ var SCHEMA = {
 
 var ACCELERATION = 0.1;
 var SHOOT_DELAY = 100;
-var PROJECTILE_SPEED = 2.5;
+var PROJECTILE_SPEED = 3;
 var INTERACT_RADIUS = 8;
 
 var Player = function (_Mob) {
@@ -1534,6 +1542,11 @@ _helpers2.default.GenerateWall(Test1, 0, 10, 10, 2);
 _helpers2.default.GenerateWall(Test1, 10, 0, 2, 10);
 _helpers2.default.GenerateWall(Test1, 0, -10, 10, 2);
 _helpers2.default.GenerateWall(Test1, -10, 0, 2, 10);
+
+_helpers2.default.GenerateWall(Test1, 30, 30, 5, 5);
+_helpers2.default.GenerateWall(Test1, 30, -30, 5, 5);
+_helpers2.default.GenerateWall(Test1, -30, 30, 5, 5);
+_helpers2.default.GenerateWall(Test1, -30, -30, 5, 5);
 
 Test1.entityQueue.push({ entity: _Barrel2.default, data: { x: 20, y: 20 } });
 Test1.entityQueue.push({ entity: _Barrel2.default, data: { x: 20, y: -20 } });

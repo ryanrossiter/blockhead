@@ -48,7 +48,7 @@ const Core = {
     init: function(canvasId) {
 
         this.scene = new THREE.Scene();
-        this.camera = new THREE.PerspectiveCamera(95, window.innerWidth / window.innerHeight, 0.1, 1000);
+        this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
 
         this.renderer = new THREE.WebGLRenderer();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -59,9 +59,9 @@ const Core = {
         this.stats.showPanel(0); // fps counter
         document.body.appendChild(this.stats.dom);
 
-        this.camera.position.y = -10;
-        this.camera.position.z = 20;
-        this.camera.rotation.x = 0.5;
+        this.camera.position.y = -17;
+        this.camera.position.z = 40;
+        this.camera.rotation.x = 0.4;
 
         Physics.CreateEngine(this);
 
@@ -106,7 +106,7 @@ const Core = {
 
     setCameraAt: function(x, y) {
         this.camera.position.x = x;
-        this.camera.position.y = y - 10;
+        this.camera.position.y = y - 17;
     },
 
     getTime: function() {
@@ -117,7 +117,7 @@ const Core = {
         this.stats.begin();
         // let en = Object.values(this.entities)[0];
         // if (en) console.log(en.body.position, en.body.velocity);
-        if (this.physicsTimeDelta >= PHYSICS_STEP_TIME) {
+        while (this.physicsTimeDelta >= PHYSICS_STEP_TIME) {
             Matter.Engine.update(Physics.engine, PHYSICS_STEP_TIME);
             this.physicsTimeDelta -= PHYSICS_STEP_TIME;
         }

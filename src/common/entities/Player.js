@@ -19,7 +19,7 @@ const SCHEMA = {
 
 const ACCELERATION = 0.1;
 const SHOOT_DELAY = 100;
-const PROJECTILE_SPEED = 2.5;
+const PROJECTILE_SPEED = 3;
 const INTERACT_RADIUS = 8;
 
 export default class Player extends Mob {

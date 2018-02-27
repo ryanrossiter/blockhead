@@ -27,6 +27,7 @@ export default class PhysicsEntity extends Entity {
             lastUpdate: Date.now(),
         }, data));
 
+        this.inWorld = false;
         this.setBody(this.createBody());
     };
 
@@ -82,7 +83,7 @@ export default class PhysicsEntity extends Entity {
     }
 
     onCollisionEnd(entity, pair, body) {
-    
+
     }
 
     toData() {
@@ -96,32 +97,38 @@ export default class PhysicsEntity extends Entity {
         super.dataUpdate(data);
         this[_data] = Helpers.mask(this[_data], data);
 
-        if (this.body.position.x === NaN || this.body.position.y === NaN) {
-            console.warn("Body position is NaN, resetting to position...");
-            this.body.position.x = this.x;
-            this.body.position.y = this.y;
+        if (this.deleted === false) {
+            if (this.body.position.x === NaN || this.body.position.y === NaN) {
+                console.warn("Body position is NaN, resetting to position...");
+                this.body.position.x = this.x;
+                this.body.position.y = this.y;
+            }
+
+            var delay = 0;
+            var xVelCorr = 0;
+            var yVelCorr = 0;
+            var angleVelCorr = 0;
+            if (this.lastBodyUpdate !== null) {
+                delay = now - this[_data].lastUpdate;
+                var delta = Date.now() + delay - this.lastBodyUpdate;
+
+                xVelCorr = (super.x - this.body.position.x) / (delta / (1000 / 60));
+                yVelCorr = (super.y - this.body.position.y) / (delta / (1000 / 60));
+                angleVelCorr = (this[_data].angle - this.body.angle) / (delta / (1000 / 60));
+            }
+
+            this.lastBodyUpdate = Date.now() + delay;
+            //console.log(`${this.body.velocity.x} ${this[_data].xVelocity} ${this.body.position.x} ${super.x} ${xVelCorr}`);
+            //console.log("aa", xVelCorr);
+            Matter.Body.setVelocity(this.body, { x: this[_data].xVelocity + xVelCorr, y: this[_data].yVelocity + yVelCorr });
+            Matter.Body.setAngularVelocity(this.body, this[_data].angularVelocity + angleVelCorr);
+            //Matter.Body.setPosition(this.body, { x: super.x, y: super.y });
+            //Matter.Body.setAngle(this.body, this[_data].angle);
+        } else if (this.inWorld === true) {
+            // remove from world
+            Matter.World.remove(Physics.engine.world, this.body);
+            this.inWorld = false;
         }
-
-        var delay = 0;
-        var xVelCorr = 0;
-        var yVelCorr = 0;
-        var angleVelCorr = 0;
-        if (this.lastBodyUpdate !== null) {
-            delay = now - this[_data].lastUpdate;
-            var delta = Date.now() + delay - this.lastBodyUpdate;
-
-            xVelCorr = (super.x - this.body.position.x) / (delta / (1000 / 60));
-            yVelCorr = (super.y - this.body.position.y) / (delta / (1000 / 60));
-            angleVelCorr = (this[_data].angle - this.body.angle) / (delta / (1000 / 60));
-        }
-
-        this.lastBodyUpdate = Date.now() + delay;
-        //console.log(`${this.body.velocity.x} ${this[_data].xVelocity} ${this.body.position.x} ${super.x} ${xVelCorr}`);
-        //console.log("aa", xVelCorr);
-        Matter.Body.setVelocity(this.body, { x: this[_data].xVelocity + xVelCorr, y: this[_data].yVelocity + yVelCorr });
-        Matter.Body.setAngularVelocity(this.body, this[_data].angularVelocity + angleVelCorr);
-        //Matter.Body.setPosition(this.body, { x: super.x, y: super.y });
-        //Matter.Body.setAngle(this.body, this[_data].angle);
     }
 
     setBody(body) {
@@ -135,6 +142,7 @@ export default class PhysicsEntity extends Entity {
         this.body = body;
         this.body.entityId = this.id;
         this.lastBodyUpdate = Date.now();
+        this.inWorld = true;
         Matter.World.add(Physics.engine.world, this.body);
     }
 
