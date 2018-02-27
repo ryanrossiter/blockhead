@@ -86,7 +86,8 @@ var ENTITIES = {
 
 var ITEMS = {
 	HANDGUN: 0,
-	RIFLE: 1
+	RIFLE: 1,
+	HEALTH: 2
 };
 
 var COLORS = {
@@ -850,6 +851,7 @@ GUN_DATA[ITEMS.RIFLE] = { delay: 200 };
 var PROJECTILE_SPEED = 3;
 var INTERACT_RADIUS = 8;
 var INVENTORY_SIZE = 4;
+var MAX_HEALTH = 10;
 
 var _data = Symbol('data');
 var SCHEMA = {
@@ -942,7 +944,9 @@ var Player = function (_Mob) {
     function Player(data) {
         _classCallCheck(this, Player);
 
-        var _this = _possibleConstructorReturn(this, (Player.__proto__ || Object.getPrototypeOf(Player)).call(this, data));
+        var _this = _possibleConstructorReturn(this, (Player.__proto__ || Object.getPrototypeOf(Player)).call(this, Object.assign({}, {
+            health: data.health || MAX_HEALTH
+        }, data)));
 
         _this[_data] = _helpers2.default.mask(SCHEMA, Object.assign({}, {
             inventory: data.inventory || Array.apply(null, Array(INVENTORY_SIZE)).map(function () {
@@ -992,7 +996,12 @@ var Player = function (_Mob) {
             }
 
             if (e) {
-                if (this.addToInventory(e.item)) {
+                if (e.item.type === ITEMS.HEALTH) {
+                    if (this.health < MAX_HEALTH) {
+                        e.deleted = true;
+                        this.health = Math.min(this.health + (e.item.health || 1), MAX_HEALTH);
+                    }
+                } else if (this.addToInventory(e.item)) {
                     e.deleted = true;
                 }
             }
@@ -1624,15 +1633,20 @@ Test1.entityQueue.push({ entity: _Barrel2.default, data: { x: 20, y: -20 } });
 Test1.entityQueue.push({ entity: _Barrel2.default, data: { x: -20, y: 20 } });
 Test1.entityQueue.push({ entity: _Barrel2.default, data: { x: -20, y: -20 } });
 
-Test1.entityQueue.push({ entity: _ZombieSpawner2.default, data: { x: 0, y: 35 } });
-Test1.entityQueue.push({ entity: _ZombieSpawner2.default, data: { x: 0, y: -35 } });
-Test1.entityQueue.push({ entity: _ZombieSpawner2.default, data: { x: 35, y: 0 } });
-Test1.entityQueue.push({ entity: _ZombieSpawner2.default, data: { x: -35, y: 0 } });
+Test1.entityQueue.push({ entity: _ZombieSpawner2.default, data: { x: 40, y: 40 } });
+// Test1.entityQueue.push({ entity: ZombieSpawner, data: { x: 40, y: -40 } });
+// Test1.entityQueue.push({ entity: ZombieSpawner, data: { x: -40, y: 40 } });
+// Test1.entityQueue.push({ entity: ZombieSpawner, data: { x: -40, y: -40 } });
 
 Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: 5, y: 5, item: { type: ITEMS.HANDGUN, ammo: 10 } } });
 Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: -5, y: 5, item: { type: ITEMS.HANDGUN, ammo: 10 } } });
 Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: -5, y: -5, item: { type: ITEMS.RIFLE, ammo: 100 } } });
 Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: 5, y: -5, item: { type: ITEMS.RIFLE, ammo: 100 } } });
+
+Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: 30, y: 0, item: { type: ITEMS.HEALTH, health: 2 } } });
+Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: 0, y: 30, item: { type: ITEMS.HEALTH, health: 2 } } });
+Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: 0, y: -30, item: { type: ITEMS.HEALTH, health: 2 } } });
+Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: -30, y: 0, item: { type: ITEMS.HEALTH, health: 2 } } });
 
 exports.default = Test1;
 

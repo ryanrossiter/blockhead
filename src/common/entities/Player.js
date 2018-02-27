@@ -13,6 +13,7 @@ GUN_DATA[ITEMS.RIFLE] = { delay: 200 };
 const PROJECTILE_SPEED = 3;
 const INTERACT_RADIUS = 8;
 const INVENTORY_SIZE = 4;
+const MAX_HEALTH = 10;
 
 const _data = Symbol('data');
 const SCHEMA = {
@@ -44,7 +45,9 @@ export default class Player extends Mob {
     set selected(s) { if (s >= 0 && s < INVENTORY_SIZE) { this.needsUpdate = true; this[_data].selected = s; }}
 
     constructor(data) {
-        super(data);
+        super(Object.assign({}, {
+            health: data.health || MAX_HEALTH
+        }, data));
 
         this[_data] = Helpers.mask(SCHEMA, Object.assign({}, {
             inventory: data.inventory || Array.apply(null, Array(INVENTORY_SIZE)).map(() => null)
@@ -88,7 +91,12 @@ export default class Player extends Mob {
         }
 
         if (e) {
-            if (this.addToInventory(e.item)) {
+            if (e.item.type === ITEMS.HEALTH) {
+                if (this.health < MAX_HEALTH) {
+                    e.deleted = true;
+                    this.health = Math.min(this.health + (e.item.health || 1), MAX_HEALTH);
+                }
+            } else if (this.addToInventory(e.item)) {
                 e.deleted = true;
             }
         }

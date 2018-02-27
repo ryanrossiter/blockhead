@@ -31,14 +31,19 @@ Test1.entityQueue.push({ entity: Barrel, data: { x: 20, y: -20 } });
 Test1.entityQueue.push({ entity: Barrel, data: { x: -20, y: 20 } });
 Test1.entityQueue.push({ entity: Barrel, data: { x: -20, y: -20 } });
 
-Test1.entityQueue.push({ entity: ZombieSpawner, data: { x: 0, y: 35 } });
-Test1.entityQueue.push({ entity: ZombieSpawner, data: { x: 0, y: -35 } });
-Test1.entityQueue.push({ entity: ZombieSpawner, data: { x: 35, y: 0 } });
-Test1.entityQueue.push({ entity: ZombieSpawner, data: { x: -35, y: 0 } });
+Test1.entityQueue.push({ entity: ZombieSpawner, data: { x: 40, y: 40 } });
+// Test1.entityQueue.push({ entity: ZombieSpawner, data: { x: 40, y: -40 } });
+// Test1.entityQueue.push({ entity: ZombieSpawner, data: { x: -40, y: 40 } });
+// Test1.entityQueue.push({ entity: ZombieSpawner, data: { x: -40, y: -40 } });
 
 Test1.entityQueue.push({ entity: FloatingItem, data: { x: 5, y: 5, item: { type: ITEMS.HANDGUN, ammo: 10 }}});
 Test1.entityQueue.push({ entity: FloatingItem, data: { x: -5, y: 5, item: { type: ITEMS.HANDGUN, ammo: 10 }}});
 Test1.entityQueue.push({ entity: FloatingItem, data: { x: -5, y: -5, item: { type: ITEMS.RIFLE, ammo: 100 }}});
 Test1.entityQueue.push({ entity: FloatingItem, data: { x: 5, y: -5, item: { type: ITEMS.RIFLE, ammo: 100 }}});
+
+Test1.entityQueue.push({ entity: FloatingItem, data: { x: 30, y: 0, item: { type: ITEMS.HEALTH, health: 2 }}});
+Test1.entityQueue.push({ entity: FloatingItem, data: { x: 0, y: 30, item: { type: ITEMS.HEALTH, health: 2 }}});
+Test1.entityQueue.push({ entity: FloatingItem, data: { x: 0, y: -30, item: { type: ITEMS.HEALTH, health: 2 }}});
+Test1.entityQueue.push({ entity: FloatingItem, data: { x: -30, y: 0, item: { type: ITEMS.HEALTH, health: 2 }}});
 
 export default Test1;

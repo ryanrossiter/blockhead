@@ -12,6 +12,7 @@ var ENTITIES = {
 var ITEMS = {
 	HANDGUN: 0,
 	RIFLE: 1,
+	HEALTH: 2,
 }
 
 var COLORS = {
