@@ -46,4 +46,6 @@ Test1.entityQueue.push({ entity: FloatingItem, data: { x: 0, y: 30, item: { type
 Test1.entityQueue.push({ entity: FloatingItem, data: { x: 0, y: -30, item: { type: ITEMS.HEALTH, health: 2 }}});
 Test1.entityQueue.push({ entity: FloatingItem, data: { x: -30, y: 0, item: { type: ITEMS.HEALTH, health: 2 }}});
 
+Test1.entityQueue.push({ entity: FloatingItem, data: { x: 15, y: 15, item: { type: ITEMS.GRENADE, ammo: 30 }}});
+
 export default Test1;

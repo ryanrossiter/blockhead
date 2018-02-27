@@ -43,6 +43,7 @@ export default class ClientBarrel extends Barrel {
             let explosion = new ClientExplosion({
                 x: this.x,
                 y: this.y,
+                explosionRadius: 18
             });
             Core.entities[explosion.id] = explosion;
             this.exploded = true;

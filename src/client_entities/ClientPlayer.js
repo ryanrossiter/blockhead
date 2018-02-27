@@ -24,8 +24,6 @@ const material = new THREE.MeshToonMaterial( {
 
 const outlineMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, side: THREE.BackSide } );
 
-const gunMat = new THREE.MeshBasicMaterial( { color: 0x333333 } );
-
 let canvas = document.createElement("canvas");
 canvas.width = 32;
 canvas.height = 8;
@@ -58,7 +56,7 @@ export default class ClientPlayer extends Player {
         outline.position.z = 2.5;
         outline.scale.multiplyScalar(1.05)
         
-        this.gun = new THREE.Mesh(ItemModels[ITEMS.HANDGUN].geom, gunMat);
+        this.gun = new THREE.Mesh(ItemModels[ITEMS.HANDGUN].geom, ItemModels[ITEMS.HANDGUN].mat);
         this.gun.position.z = 3;
         this.gun.position.x = 3;
         this.gun.position.y = -1;
@@ -111,6 +109,7 @@ export default class ClientPlayer extends Player {
         if (this.inventory[this.selected] !== null) {
             this.gun.visible = true;
             this.gun.geometry = ItemModels[this.inventory[this.selected].type].geom;
+            this.gun.material = ItemModels[this.inventory[this.selected].type].mat;
         } else {
             this.gun.visible = false;
         }

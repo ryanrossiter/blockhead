@@ -81,13 +81,15 @@ var ENTITIES = {
 	PROJECTILE: 4,
 	ZOMBIE: 5,
 	BARREL: 6,
-	FLOATING_ITEM: 7
+	FLOATING_ITEM: 7,
+	GRENADE: 8
 };
 
 var ITEMS = {
 	HANDGUN: 0,
 	RIFLE: 1,
-	HEALTH: 2
+	HEALTH: 2,
+	GRENADE: 3
 };
 
 var COLORS = {
@@ -820,6 +822,10 @@ var _Projectile = __webpack_require__(13);
 
 var _Projectile2 = _interopRequireDefault(_Projectile);
 
+var _Grenade = __webpack_require__(18);
+
+var _Grenade2 = _interopRequireDefault(_Grenade);
+
 var _FloatingItem = __webpack_require__(17);
 
 var _FloatingItem2 = _interopRequireDefault(_FloatingItem);
@@ -848,6 +854,7 @@ var ACCELERATION = 0.1;
 var GUN_DATA = {};
 GUN_DATA[ITEMS.HANDGUN] = { delay: 600 };
 GUN_DATA[ITEMS.RIFLE] = { delay: 200 };
+GUN_DATA[ITEMS.GRENADE] = { delay: 1000 };
 var PROJECTILE_SPEED = 3;
 var INTERACT_RADIUS = 8;
 var INVENTORY_SIZE = 4;
@@ -1043,7 +1050,7 @@ var Player = function (_Mob) {
         value: function _shoot(core) {
             var xv = Math.cos(this.angleFacing);
             var yv = Math.sin(this.angleFacing);
-            core.entity.create(_Projectile2.default, {
+            core.entity.create(this.inventory[this.selected].type === ITEMS.GRENADE ? _Grenade2.default : _Projectile2.default, {
                 player: this.player,
                 x: this.x + yv + xv, // add these to make bullet come out of gun, 1 unit to the right side and 1 unit forward
                 y: this.y - xv + yv,
@@ -1648,6 +1655,8 @@ Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: 0, y: 30, it
 Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: 0, y: -30, item: { type: ITEMS.HEALTH, health: 2 } } });
 Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: -30, y: 0, item: { type: ITEMS.HEALTH, health: 2 } } });
 
+Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: 15, y: 15, item: { type: ITEMS.GRENADE, ammo: 30 } } });
+
 exports.default = Test1;
 
 /***/ }),
@@ -2139,7 +2148,7 @@ var SCHEMA = {
     type: ENTITIES.BARREL
 };
 
-var EXPLOSION_RADIUS = 15;
+var EXPLOSION_RADIUS = 18;
 
 var Barrel = function (_Mob) {
     _inherits(Barrel, _Mob);
@@ -2303,6 +2312,132 @@ var FloatingItem = function (_Entity) {
 }(_Entity3.default);
 
 exports.default = FloatingItem;
+;
+
+/***/ }),
+/* 18 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _helpers = __webpack_require__(2);
+
+var _helpers2 = _interopRequireDefault(_helpers);
+
+var _PhysicsEntity2 = __webpack_require__(5);
+
+var _PhysicsEntity3 = _interopRequireDefault(_PhysicsEntity2);
+
+var _Mob = __webpack_require__(3);
+
+var _Mob2 = _interopRequireDefault(_Mob);
+
+var _common = __webpack_require__(0);
+
+var _common2 = _interopRequireDefault(_common);
+
+var _matterJs = __webpack_require__(1);
+
+var _matterJs2 = _interopRequireDefault(_matterJs);
+
+var _physics = __webpack_require__(4);
+
+var _physics2 = _interopRequireDefault(_physics);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var ENTITIES = _common2.default.ENTITIES;
+
+
+var _data = Symbol('data');
+var SCHEMA = {
+    _protect: ['type'],
+    type: ENTITIES.GRENADE
+};
+
+var EXPLOSION_RADIUS = 14;
+var DEFAULT_LIFETIME = 2500;
+
+var Grenade = function (_PhysicsEntity) {
+    _inherits(Grenade, _PhysicsEntity);
+
+    _createClass(Grenade, [{
+        key: 'type',
+        get: function get() {
+            return this[_data].type;
+        }
+    }]);
+
+    function Grenade(data) {
+        _classCallCheck(this, Grenade);
+
+        var _this = _possibleConstructorReturn(this, (Grenade.__proto__ || Object.getPrototypeOf(Grenade)).call(this, Object.assign({}, data, {
+            w: data.w || 1,
+            h: data.h || 1
+        })));
+
+        _this[_data] = _helpers2.default.mask(SCHEMA, data);
+
+        _this.body.frictionAir = 0.1;
+        _this.body.restitution = 1;
+        _this.body.mass = 0.4;
+
+        _this.lifetime = DEFAULT_LIFETIME;
+        return _this;
+    }
+
+    _createClass(Grenade, [{
+        key: 'update',
+        value: function update(core) {
+            var needsUpdate = _get(Grenade.prototype.__proto__ || Object.getPrototypeOf(Grenade.prototype), 'update', this).call(this, core);
+
+            this.lifetime -= core.getUpdateDelta();
+            if (this.lifetime <= 0) {
+                // damage entities in radius
+                var es = core.entity.getInRect(this.x - EXPLOSION_RADIUS, this.y - EXPLOSION_RADIUS, this.x + EXPLOSION_RADIUS, this.y + EXPLOSION_RADIUS);
+                for (var i = 0; i < es.length; i++) {
+                    if (es[i] instanceof _Mob2.default && es[i].distanceFrom(this.x, this.y) <= EXPLOSION_RADIUS) {
+                        es[i].health = es[i].health - 3;
+                    }
+                }
+
+                this.deleted = true;
+            }
+
+            return needsUpdate;
+        }
+    }, {
+        key: 'toData',
+        value: function toData() {
+            return Object.assign({}, _get(Grenade.prototype.__proto__ || Object.getPrototypeOf(Grenade.prototype), 'toData', this).call(this), _helpers2.default.mask(SCHEMA, this[_data], true));
+        }
+    }, {
+        key: 'dataUpdate',
+        value: function dataUpdate(data, now) {
+            _get(Grenade.prototype.__proto__ || Object.getPrototypeOf(Grenade.prototype), 'dataUpdate', this).call(this, data, now);
+            this[_data] = _helpers2.default.mask(this[_data], data);
+        }
+    }]);
+
+    return Grenade;
+}(_PhysicsEntity3.default);
+
+exports.default = Grenade;
 ;
 
 /***/ })

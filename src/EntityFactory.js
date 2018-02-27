@@ -6,6 +6,7 @@ import ClientProjectile from './client_entities/ClientProjectile';
 import ClientZombie from './client_entities/ClientZombie';
 import ClientBarrel from './client_entities/ClientBarrel';
 import ClientFloatingItem from './client_entities/ClientFloatingItem';
+import ClientGrenade from './client_entities/ClientGrenade';
 
 // Associates entity classes with their type
 const EntityFactory = {
@@ -39,6 +40,7 @@ EntityFactory.registerEntity(ClientPlayer, ENTITIES.PLAYER);
 EntityFactory.registerEntity(ClientProjectile, ENTITIES.PROJECTILE);
 EntityFactory.registerEntity(ClientZombie, ENTITIES.ZOMBIE);
 EntityFactory.registerEntity(ClientBarrel, ENTITIES.BARREL);
+EntityFactory.registerEntity(ClientGrenade, ENTITIES.GRENADE);
 EntityFactory.registerEntity(ClientFloatingItem, ENTITIES.FLOATING_ITEM);
 
 export default EntityFactory;

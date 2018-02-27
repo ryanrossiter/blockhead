@@ -11,7 +11,7 @@ const SCHEMA = {
     type: ENTITIES.BARREL,
 };
 
-const EXPLOSION_RADIUS = 15;
+const EXPLOSION_RADIUS = 18;
 
 export default class Barrel extends Mob {
     get type() { return this[_data].type }

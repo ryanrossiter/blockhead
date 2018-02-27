@@ -1,6 +1,7 @@
 import Helpers from '../helpers';
 import Mob from './Mob';
 import Projectile from './Projectile';
+import Grenade from './Grenade';
 import FloatingItem from './FloatingItem';
 import COMMON from '../common';
 import Matter from 'matter-js';
@@ -10,6 +11,7 @@ const ACCELERATION = 0.1;
 const GUN_DATA = {};
 GUN_DATA[ITEMS.HANDGUN] = { delay: 600 };
 GUN_DATA[ITEMS.RIFLE] = { delay: 200 };
+GUN_DATA[ITEMS.GRENADE] = { delay: 1000 };
 const PROJECTILE_SPEED = 3;
 const INTERACT_RADIUS = 8;
 const INVENTORY_SIZE = 4;
@@ -137,7 +139,7 @@ export default class Player extends Mob {
     _shoot(core) {
         let xv = Math.cos(this.angleFacing);
         let yv = Math.sin(this.angleFacing);
-        core.entity.create(Projectile, {
+        core.entity.create(this.inventory[this.selected].type === ITEMS.GRENADE? Grenade : Projectile, {
             player: this.player,
             x: this.x + yv + xv, // add these to make bullet come out of gun, 1 unit to the right side and 1 unit forward
             y: this.y - xv + yv,

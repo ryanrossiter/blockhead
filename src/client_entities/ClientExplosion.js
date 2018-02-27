@@ -3,7 +3,7 @@ import Entity from '../common/entities/Entity';
 
 //import * as THREE from 'three';
 
-const EXPLOSION_RADIUS = 14;
+const EXPLOSION_RADIUS = 5;
 const EXPLOSION_DURATION = 200;
 const material = new THREE.MeshToonMaterial( {
     //map: imgTexture,
@@ -30,6 +30,7 @@ export default class ClientExplosion extends Entity {
         Core.scene.add( this.group );
 
         this.explosionStart = Date.now();
+        this.explosionRadius = data.explosionRadius || EXPLOSION_RADIUS;
     }
 
     get explosionDuration() { return Date.now() - this.explosionStart; }
@@ -42,10 +43,9 @@ export default class ClientExplosion extends Entity {
     }
 
     geometryUpdate() {
-        let scale = this.explosionDuration / EXPLOSION_DURATION * EXPLOSION_RADIUS;
+        let scale = this.explosionDuration / EXPLOSION_DURATION * this.explosionRadius;
         this.group.scale.x = this.group.scale.y = scale;
         this.group.scale.z = Math.max(scale * 0.6, 1); /// make it shorter
-        //this.group.rotation.z = this.explosionDuration / EXPLOSION_DURATION * 2 * Math.PI;
     }
 
     onDelete() {
