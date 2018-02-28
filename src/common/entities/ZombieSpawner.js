@@ -12,6 +12,7 @@ export default class ZombieSpawner extends Entity {
 
         this.serverSideOnly = true;
         this.spawnTimer = 0;
+        this.count = data.count || -1; // -1 for non-stop
     };
 
     get spawnTimeElapsed() { return Date.now() - this.spawnTimer; }
@@ -19,13 +20,14 @@ export default class ZombieSpawner extends Entity {
     update(core) {
         let needsUpdate = super.update(core);
 
-        if (this.spawnTimeElapsed > SPAWN_DELAY) {
+        if (this.spawnTimeElapsed > SPAWN_DELAY && this.count !== 0) {
             core.entity.create(Zombie, {
                 x: this.x,
                 y: this.y,
             });
 
             this.spawnTimer = Date.now();
+            this.count--;
         }
 
         return needsUpdate;

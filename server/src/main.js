@@ -50,13 +50,9 @@ const Core = {
 
         Physics.CreateEngine(this);
 
-        let map = Test1;
-        WorldBuilder.Build(Physics.engine.world, map);
-
-        for (var i = 0; i < map.entityQueue.length; i++) {
-            let e = map.entityQueue[i];
-            Core.entity.create(e.entity, e.data);
-        }
+        this.map = Test1;
+        WorldBuilder.Build(Physics.engine.world, this.map);
+        this.map.init(this);
 
         setInterval(this.update.bind(this), this.updateInterval);
         //setInterval(this.updateLeaderboard.bind(this), this.leaderboardUpdateInterssval);
@@ -72,6 +68,8 @@ const Core = {
     },
 
     update: function() {
+        this.map.update(this);
+
         if (this.physicsTimeDelta >= PHYSICS_STEP_TIME) {
             Matter.Engine.update(Physics.engine, PHYSICS_STEP_TIME);
             this.physicsTimeDelta -= PHYSICS_STEP_TIME;

@@ -855,7 +855,7 @@ var GUN_DATA = {};
 GUN_DATA[ITEMS.HANDGUN] = { delay: 600 };
 GUN_DATA[ITEMS.RIFLE] = { delay: 200 };
 GUN_DATA[ITEMS.GRENADE] = { delay: 1000 };
-var PROJECTILE_SPEED = 3;
+var PROJECTILE_SPEED = 3.5;
 var INTERACT_RADIUS = 8;
 var INVENTORY_SIZE = 4;
 var MAX_HEALTH = 10;
@@ -1203,13 +1203,9 @@ const Core = {
 
         _physics2.default.CreateEngine(this);
 
-        let map = _Test2.default;
-        _WorldBuilder2.default.Build(_physics2.default.engine.world, map);
-
-        for (var i = 0; i < map.entityQueue.length; i++) {
-            let e = map.entityQueue[i];
-            Core.entity.create(e.entity, e.data);
-        }
+        this.map = _Test2.default;
+        _WorldBuilder2.default.Build(_physics2.default.engine.world, this.map);
+        this.map.init(this);
 
         setInterval(this.update.bind(this), this.updateInterval);
         //setInterval(this.updateLeaderboard.bind(this), this.leaderboardUpdateInterssval);
@@ -1225,6 +1221,8 @@ const Core = {
     },
 
     update: function () {
+        this.map.update(this);
+
         if (this.physicsTimeDelta >= PHYSICS_STEP_TIME) {
             _matterJs2.default.Engine.update(_physics2.default.engine, PHYSICS_STEP_TIME);
             this.physicsTimeDelta -= PHYSICS_STEP_TIME;
@@ -1612,15 +1610,69 @@ var _FloatingItem2 = _interopRequireDefault(_FloatingItem);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var ITEMS = _common2.default.ITEMS;
+var ITEMS = _common2.default.ITEMS,
+    ENTITIES = _common2.default.ENTITIES;
 
 
 var Test1 = {
     objQueue: [],
-    entityQueue: []
+    init: function init(core) {
+        this.wave = 1;
+        this.spawners = [];
 
-    // border walls
-};_helpers2.default.GenerateWall(Test1, 0, 50, 102, 2);
+        core.entity.create(_Barrel2.default, { x: 20, y: 20 });
+        core.entity.create(_Barrel2.default, { x: 20, y: -20 });
+        core.entity.create(_Barrel2.default, { x: -20, y: 20 });
+        core.entity.create(_Barrel2.default, { x: -20, y: -20 });
+
+        this.spawners.push(core.entity.create(_ZombieSpawner2.default, { x: 40, y: 40 }));
+        this.spawners.push(core.entity.create(_ZombieSpawner2.default, { x: 40, y: -40 }));
+        this.spawners.push(core.entity.create(_ZombieSpawner2.default, { x: -40, y: 40 }));
+        this.spawners.push(core.entity.create(_ZombieSpawner2.default, { x: -40, y: -40 }));
+
+        core.entity.create(_FloatingItem2.default, { x: 5, y: 5, item: { type: ITEMS.HANDGUN, ammo: 20 } });
+        core.entity.create(_FloatingItem2.default, { x: -5, y: 5, item: { type: ITEMS.HANDGUN, ammo: 20 } });
+        core.entity.create(_FloatingItem2.default, { x: -5, y: -5, item: { type: ITEMS.RIFLE, ammo: 100 } });
+        core.entity.create(_FloatingItem2.default, { x: 5, y: -5, item: { type: ITEMS.RIFLE, ammo: 100 } });
+
+        core.entity.create(_FloatingItem2.default, { x: 30, y: 0, item: { type: ITEMS.HEALTH, health: 2 } });
+        core.entity.create(_FloatingItem2.default, { x: 0, y: 30, item: { type: ITEMS.HEALTH, health: 2 } });
+        core.entity.create(_FloatingItem2.default, { x: 0, y: -30, item: { type: ITEMS.HEALTH, health: 2 } });
+        core.entity.create(_FloatingItem2.default, { x: -30, y: 0, item: { type: ITEMS.HEALTH, health: 2 } });
+
+        core.entity.create(_FloatingItem2.default, { x: 15, y: 15, item: { type: ITEMS.GRENADE, ammo: 30 } });
+
+        this.setWave(this.wave);
+    },
+    setWave: function setWave(n) {
+        for (var i = 0; i < this.spawners.length; i++) {
+            this.spawners[i].count = n * 3;
+        }
+    },
+    update: function update(core) {
+        var done = true;
+        for (var i = 0; i < this.spawners.length; i++) {
+            if (this.spawners[i].count > 0) {
+                done = false;
+                break;
+            }
+        }
+
+        if (done) {
+            // make sure no zombies are left
+            done = core.entity.findByProperty("type", ENTITIES.ZOMBIE).length === 0;
+        }
+
+        if (done) {
+            this.wave++;
+            this.setWave(this.wave);
+            core.io.sockets.emit("showMessage", { message: "Wave " + this.wave });
+        }
+    }
+};
+
+// border walls
+_helpers2.default.GenerateWall(Test1, 0, 50, 102, 2);
 _helpers2.default.GenerateWall(Test1, 50, 0, 2, 102);
 _helpers2.default.GenerateWall(Test1, 0, -50, 102, 2);
 _helpers2.default.GenerateWall(Test1, -50, 0, 2, 102);
@@ -1634,28 +1686,6 @@ _helpers2.default.GenerateWall(Test1, 30, 30, 5, 5);
 _helpers2.default.GenerateWall(Test1, 30, -30, 5, 5);
 _helpers2.default.GenerateWall(Test1, -30, 30, 5, 5);
 _helpers2.default.GenerateWall(Test1, -30, -30, 5, 5);
-
-Test1.entityQueue.push({ entity: _Barrel2.default, data: { x: 20, y: 20 } });
-Test1.entityQueue.push({ entity: _Barrel2.default, data: { x: 20, y: -20 } });
-Test1.entityQueue.push({ entity: _Barrel2.default, data: { x: -20, y: 20 } });
-Test1.entityQueue.push({ entity: _Barrel2.default, data: { x: -20, y: -20 } });
-
-Test1.entityQueue.push({ entity: _ZombieSpawner2.default, data: { x: 40, y: 40 } });
-// Test1.entityQueue.push({ entity: ZombieSpawner, data: { x: 40, y: -40 } });
-// Test1.entityQueue.push({ entity: ZombieSpawner, data: { x: -40, y: 40 } });
-// Test1.entityQueue.push({ entity: ZombieSpawner, data: { x: -40, y: -40 } });
-
-Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: 5, y: 5, item: { type: ITEMS.HANDGUN, ammo: 10 } } });
-Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: -5, y: 5, item: { type: ITEMS.HANDGUN, ammo: 10 } } });
-Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: -5, y: -5, item: { type: ITEMS.RIFLE, ammo: 100 } } });
-Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: 5, y: -5, item: { type: ITEMS.RIFLE, ammo: 100 } } });
-
-Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: 30, y: 0, item: { type: ITEMS.HEALTH, health: 2 } } });
-Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: 0, y: 30, item: { type: ITEMS.HEALTH, health: 2 } } });
-Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: 0, y: -30, item: { type: ITEMS.HEALTH, health: 2 } } });
-Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: -30, y: 0, item: { type: ITEMS.HEALTH, health: 2 } } });
-
-Test1.entityQueue.push({ entity: _FloatingItem2.default, data: { x: 15, y: 15, item: { type: ITEMS.GRENADE, ammo: 30 } } });
 
 exports.default = Test1;
 
@@ -1904,6 +1934,7 @@ var ZombieSpawner = function (_Entity) {
 
         _this.serverSideOnly = true;
         _this.spawnTimer = 0;
+        _this.count = data.count || -1; // -1 for non-stop
         return _this;
     }
 
@@ -1912,13 +1943,14 @@ var ZombieSpawner = function (_Entity) {
         value: function update(core) {
             var needsUpdate = _get(ZombieSpawner.prototype.__proto__ || Object.getPrototypeOf(ZombieSpawner.prototype), 'update', this).call(this, core);
 
-            if (this.spawnTimeElapsed > SPAWN_DELAY) {
+            if (this.spawnTimeElapsed > SPAWN_DELAY && this.count !== 0) {
                 core.entity.create(_Zombie2.default, {
                     x: this.x,
                     y: this.y
                 });
 
                 this.spawnTimer = Date.now();
+                this.count--;
             }
 
             return needsUpdate;

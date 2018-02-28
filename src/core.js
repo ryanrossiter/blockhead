@@ -221,6 +221,10 @@ const Core = {
                 }
             });
 
+            socket.on("showMessage", function({ message }) {
+                UI.showMessage(message);
+            });
+
             socket.emit("join", { name: "Migos" });
 
             // $('#join-button').click(function() {

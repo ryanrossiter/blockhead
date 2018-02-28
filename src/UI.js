@@ -60,5 +60,12 @@ export default {
                 ctx.fillText(player.inventory[i].type, boxX + (boxW + 10) * i + 20, 60);
             }
         }
+    },
+    showMessage(message) {
+        let el = document.createElement("h1");
+        el.innerHTML = message;
+        el.className = "message";
+        document.body.appendChild(el);
+        setTimeout(()=>{ document.body.removeChild(el); }, 7000); // I hate timeouts but I'm also lazy
     }
 }
