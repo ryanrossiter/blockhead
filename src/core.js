@@ -79,7 +79,7 @@ const Core = {
         this.plane.position.z = -0.5;
         this.scene.add( this.plane );
 
-        SceneBuilder.Build(this.scene, Test1);
+        SceneBuilder.Build(this.renderer, this.scene, Test1);
         WorldBuilder.Build(Physics.engine.world, Test1);
 
         this.lastFrameTime = Date.now();

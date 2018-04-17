@@ -26,11 +26,12 @@ export default class Zombie extends Mob {
         }));
 
         this[_data] = Helpers.mask(SCHEMA, data);
-        this.targetEntity = null;
+        this.targetPos = null;
         this.targetTimer = 0;
 
         this.collidingEntity = null;
         this.attackTimer = 0;
+        this.body.collisionFilter.category = 2;
     };
 
     onCollision(entity, pair) {
@@ -50,9 +51,9 @@ export default class Zombie extends Mob {
     update(core) {
         let needsUpdate = super.update(core);
 
-        if (this.targetEntity) {
-            let dX = this.targetEntity.x - this.x;
-            let dY = this.targetEntity.y - this.y;
+        if (this.targetPos) {
+            let dX = this.targetPos.x - this.x;
+            let dY = this.targetPos.y - this.y;
             let dAF = (Math.atan(dY / dX) + (dX < 0? Math.PI : 0) + 2 * Math.PI) % (2 * Math.PI) - this.angleFacing;
             if (Math.abs(dAF) > Math.PI) dAF = dAF - Math.sign(dAF) * 2 * Math.PI;
             this.angleFacing = (this.angleFacing + Math.sign(dAF) * Math.min(Math.abs(dAF), 0.1) + 2 * Math.PI) % (2 * Math.PI);
@@ -65,18 +66,25 @@ export default class Zombie extends Mob {
         }
 
         if (this.targetTimer <= 0) {
-            let cd = -1;
-            let closest = null;
-            for (const playerId in core.playerNames) {
-                let ent = core.entities[playerId];
-                if (ent instanceof Player === false) continue;
-                let d = ent.distanceFrom(this.x, this.y)
-                if (d < cd || cd === -1) {
-                    closest = ent;
-                    cd = d;
+            let { w, h } = core.map.bounds;
+            let isOutsideRenderBounds = !this.inRect(-w/2, -h/2, w/2, h/2);
+
+            if (isOutsideRenderBounds) {
+                this.targetPos = { x: ~~(this.x / (w/2)), y: ~~(this.y / (h/2)) }
+            } else {
+                let cd = -1;
+                let closest = null;
+                for (const playerId in core.playerNames) {
+                    let ent = core.entities[playerId];
+                    if (ent instanceof Player === false) continue;
+                    let d = ent.distanceFrom(this.x, this.y)
+                    if (d < cd || cd === -1) {
+                        closest = ent;
+                        cd = d;
+                    }
                 }
+                if (closest) this.targetPos = closest;
             }
-            if (closest) this.targetEntity = closest;
         } else this.targetTimer -= core.getUpdateDelta();
 
         if (this.attackTimer <= 0) {

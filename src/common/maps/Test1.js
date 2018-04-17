@@ -7,6 +7,7 @@ let { ITEMS, ENTITIES } = COMMON;
 
 const Test1 = {
     objQueue: [],
+    bounds: { w: 102.1, h: 102.1 },
     init(core) {
         this.wave = 1;
         this.spawners = [];
@@ -16,10 +17,10 @@ const Test1 = {
         core.entity.create(Barrel, { x: -20, y: 20 } );
         core.entity.create(Barrel, { x: -20, y: -20 } );
 
-        this.spawners.push(core.entity.create(ZombieSpawner, { x: 40, y: 40 } ));
-        this.spawners.push(core.entity.create(ZombieSpawner, { x: 40, y: -40 } ));
-        this.spawners.push(core.entity.create(ZombieSpawner, { x: -40, y: 40 } ));
-        this.spawners.push(core.entity.create(ZombieSpawner, { x: -40, y: -40 } ));
+        this.spawners.push(core.entity.create(ZombieSpawner, { x: 0, y: 60 } ));
+        this.spawners.push(core.entity.create(ZombieSpawner, { x: 0, y: -60 } ));
+        this.spawners.push(core.entity.create(ZombieSpawner, { x: 60, y: 0 } ));
+        this.spawners.push(core.entity.create(ZombieSpawner, { x: -60, y: -0 } ));
 
         core.entity.create(FloatingItem, { x: 5, y: 5, item: { type: ITEMS.HANDGUN, ammo: 20 }});
         core.entity.create(FloatingItem, { x: -5, y: 5, item: { type: ITEMS.HANDGUN, ammo: 20 }});
@@ -64,10 +65,22 @@ const Test1 = {
 }
 
 // border walls
-Helpers.GenerateWall(Test1, 0, 50, 102, 2);
-Helpers.GenerateWall(Test1, 50, 0, 2, 102);
-Helpers.GenerateWall(Test1, 0, -50, 102, 2);
-Helpers.GenerateWall(Test1, -50, 0, 2, 102);
+Helpers.GenerateWall(Test1, -29, 50, 44, 2);
+Helpers.GenerateWall(Test1, 29, 50, 44, 2);
+Helpers.GeneratePlayerWall(Test1, 0, 50, 14, 2);
+
+Helpers.GenerateWall(Test1, 50, 29, 2, 44);
+Helpers.GenerateWall(Test1, 50, -29, 2, 44);
+Helpers.GeneratePlayerWall(Test1, 50, 0, 2, 14);
+
+Helpers.GenerateWall(Test1, 29, -50, 44, 2);
+Helpers.GenerateWall(Test1, -29, -50, 44, 2);
+Helpers.GeneratePlayerWall(Test1, 0, -50, 14, 5);
+
+Helpers.GenerateWall(Test1, -50, 29, 2, 44);
+Helpers.GenerateWall(Test1, -50, -29, 2, 44);
+Helpers.GeneratePlayerWall(Test1, -50, 0, 2, 14);
+// end border walls
 
 Helpers.GenerateWall(Test1, 0, 10, 10, 2);
 Helpers.GenerateWall(Test1, 10, 0, 2, 10);

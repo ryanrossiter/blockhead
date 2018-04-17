@@ -1616,6 +1616,7 @@ var ITEMS = _common2.default.ITEMS,
 
 var Test1 = {
     objQueue: [],
+    bounds: { w: 102.1, h: 102.1 },
     init: function init(core) {
         this.wave = 1;
         this.spawners = [];
@@ -1625,10 +1626,10 @@ var Test1 = {
         core.entity.create(_Barrel2.default, { x: -20, y: 20 });
         core.entity.create(_Barrel2.default, { x: -20, y: -20 });
 
-        this.spawners.push(core.entity.create(_ZombieSpawner2.default, { x: 40, y: 40 }));
-        this.spawners.push(core.entity.create(_ZombieSpawner2.default, { x: 40, y: -40 }));
-        this.spawners.push(core.entity.create(_ZombieSpawner2.default, { x: -40, y: 40 }));
-        this.spawners.push(core.entity.create(_ZombieSpawner2.default, { x: -40, y: -40 }));
+        this.spawners.push(core.entity.create(_ZombieSpawner2.default, { x: 0, y: 60 }));
+        this.spawners.push(core.entity.create(_ZombieSpawner2.default, { x: 0, y: -60 }));
+        this.spawners.push(core.entity.create(_ZombieSpawner2.default, { x: 60, y: 0 }));
+        this.spawners.push(core.entity.create(_ZombieSpawner2.default, { x: -60, y: -0 }));
 
         core.entity.create(_FloatingItem2.default, { x: 5, y: 5, item: { type: ITEMS.HANDGUN, ammo: 20 } });
         core.entity.create(_FloatingItem2.default, { x: -5, y: 5, item: { type: ITEMS.HANDGUN, ammo: 20 } });
@@ -1672,10 +1673,22 @@ var Test1 = {
 };
 
 // border walls
-_helpers2.default.GenerateWall(Test1, 0, 50, 102, 2);
-_helpers2.default.GenerateWall(Test1, 50, 0, 2, 102);
-_helpers2.default.GenerateWall(Test1, 0, -50, 102, 2);
-_helpers2.default.GenerateWall(Test1, -50, 0, 2, 102);
+_helpers2.default.GenerateWall(Test1, -29, 50, 44, 2);
+_helpers2.default.GenerateWall(Test1, 29, 50, 44, 2);
+_helpers2.default.GeneratePlayerWall(Test1, 0, 50, 14, 2);
+
+_helpers2.default.GenerateWall(Test1, 50, 29, 2, 44);
+_helpers2.default.GenerateWall(Test1, 50, -29, 2, 44);
+_helpers2.default.GeneratePlayerWall(Test1, 50, 0, 2, 14);
+
+_helpers2.default.GenerateWall(Test1, 29, -50, 44, 2);
+_helpers2.default.GenerateWall(Test1, -29, -50, 44, 2);
+_helpers2.default.GeneratePlayerWall(Test1, 0, -50, 14, 5);
+
+_helpers2.default.GenerateWall(Test1, -50, 29, 2, 44);
+_helpers2.default.GenerateWall(Test1, -50, -29, 2, 44);
+_helpers2.default.GeneratePlayerWall(Test1, -50, 0, 2, 14);
+// end border walls
 
 _helpers2.default.GenerateWall(Test1, 0, 10, 10, 2);
 _helpers2.default.GenerateWall(Test1, 10, 0, 2, 10);
@@ -1702,7 +1715,15 @@ Object.defineProperty(exports, "__esModule", {
 exports.default = {
     GenerateWall: function GenerateWall(map, x, y, w, h) {
         map.objQueue.push({
-            name: "rectangle",
+            name: "wall",
+            x: x, y: y, w: w, h: h, zHeight: 7,
+            color: 0x222222
+        });
+    },
+
+    GeneratePlayerWall: function GeneratePlayerWall(map, x, y, w, h) {
+        map.objQueue.push({
+            name: "player-wall",
             x: x, y: y, w: w, h: h, zHeight: 7,
             color: 0x222222
         });
@@ -1737,8 +1758,11 @@ exports.default = {
                 w = _map$objQueue$i.w,
                 h = _map$objQueue$i.h;
 
-            if (name === "rectangle") {
+            if (name === "wall") {
                 body = new _matterJs2.default.Bodies.rectangle(x, y, w, h);
+            } else if (name === "player-wall") {
+                body = new _matterJs2.default.Bodies.rectangle(x, y, w, h);
+                body.collisionFilter.mask = 0xFFFD; // exclude 2nd bit
             }
 
             if (body) {
@@ -2046,11 +2070,12 @@ var Zombie = function (_Mob) {
         })));
 
         _this[_data] = _helpers2.default.mask(SCHEMA, data);
-        _this.targetEntity = null;
+        _this.targetPos = null;
         _this.targetTimer = 0;
 
         _this.collidingEntity = null;
         _this.attackTimer = 0;
+        _this.body.collisionFilter.category = 2;
         return _this;
     }
 
@@ -2075,9 +2100,9 @@ var Zombie = function (_Mob) {
         value: function update(core) {
             var needsUpdate = _get(Zombie.prototype.__proto__ || Object.getPrototypeOf(Zombie.prototype), 'update', this).call(this, core);
 
-            if (this.targetEntity) {
-                var dX = this.targetEntity.x - this.x;
-                var dY = this.targetEntity.y - this.y;
+            if (this.targetPos) {
+                var dX = this.targetPos.x - this.x;
+                var dY = this.targetPos.y - this.y;
                 var dAF = (Math.atan(dY / dX) + (dX < 0 ? Math.PI : 0) + 2 * Math.PI) % (2 * Math.PI) - this.angleFacing;
                 if (Math.abs(dAF) > Math.PI) dAF = dAF - Math.sign(dAF) * 2 * Math.PI;
                 this.angleFacing = (this.angleFacing + Math.sign(dAF) * Math.min(Math.abs(dAF), 0.1) + 2 * Math.PI) % (2 * Math.PI);
@@ -2090,18 +2115,28 @@ var Zombie = function (_Mob) {
             }
 
             if (this.targetTimer <= 0) {
-                var cd = -1;
-                var closest = null;
-                for (var playerId in core.playerNames) {
-                    var ent = core.entities[playerId];
-                    if (ent instanceof _Player2.default === false) continue;
-                    var d = ent.distanceFrom(this.x, this.y);
-                    if (d < cd || cd === -1) {
-                        closest = ent;
-                        cd = d;
+                var _core$map$bounds = core.map.bounds,
+                    w = _core$map$bounds.w,
+                    h = _core$map$bounds.h;
+
+                var isOutsideRenderBounds = !this.inRect(-w / 2, -h / 2, w / 2, h / 2);
+
+                if (isOutsideRenderBounds) {
+                    this.targetPos = { x: ~~(this.x / (w / 2)), y: ~~(this.y / (h / 2)) };
+                } else {
+                    var cd = -1;
+                    var closest = null;
+                    for (var playerId in core.playerNames) {
+                        var ent = core.entities[playerId];
+                        if (ent instanceof _Player2.default === false) continue;
+                        var d = ent.distanceFrom(this.x, this.y);
+                        if (d < cd || cd === -1) {
+                            closest = ent;
+                            cd = d;
+                        }
                     }
+                    if (closest) this.targetPos = closest;
                 }
-                if (closest) this.targetEntity = closest;
             } else this.targetTimer -= core.getUpdateDelta();
 
             if (this.attackTimer <= 0) {
